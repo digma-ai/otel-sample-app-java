@@ -13,6 +13,7 @@ public class ClientTester {
 
 	private static final Logger logger = LoggerFactory.getLogger(ClientTester.class);
 	private static final String BASE_APP_URL = "http://localhost:9753";
+	private static final String BASE_APP_SAMPLE_URL = BASE_APP_URL + "/SampleInsights";
 
 	public static void main(String[] args) {
 		logger.info("Starting...");
@@ -62,6 +63,7 @@ public class ClientTester {
 			myClient.execute(String.format("owners/%d/pets/new", ownerId));
 		}
 
+		generateInsightData();
 
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			try {
@@ -71,6 +73,29 @@ public class ClientTester {
 				Thread.interrupted();
 			}
 		}));
+	}
+
+	private static void generateInsightData() {
+		MyClient myClient = new MyClient(BASE_APP_SAMPLE_URL);
+
+		logger.info("***** START generateInsightData *****");
+
+		logger.info("***** generate slow endpoint insight *****");
+		for (int ix = 1; ix <= 2; ix++) {
+			myClient.execute("/SlowEndpoint?extraLatency=2500");
+		}
+
+		logger.info("***** generate bottleneck insight *****");
+		for (int ix = 1; ix <= 2; ix++) {
+			myClient.execute("/SpanBottleneck");
+		}
+
+		logger.info("***** generate high usage insight *****");
+		for (int ix = 1; ix <= 400; ix++) {
+			myClient.execute("/HighUsage");
+		}
+
+		logger.info("***** END generateInsightData *****");
 	}
 
 	static class MyClient {
