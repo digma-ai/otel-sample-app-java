@@ -7,6 +7,7 @@ We took the original application of [PetClinic](https://github.com/spring-projec
 ## Prerequisites
 
 - [Java 11+](https://www.oracle.com/sa/java/technologies/javase/jdk11-archive-downloads.html)
+- [Docker (docker-compose)](https://www.docker.com/)
 - [IntelliJ IDEA 2022.2+](https://www.jetbrains.com/idea/download)
 
 ## Running the app with Digma
