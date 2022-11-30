@@ -1,0 +1,33 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:8317"
+
+exporters:
+  logging:
+    logLevel: DEBUG
+
+  otlp/collector4317:
+    endpoint: "host.docker.internal:4317"
+    tls:
+      insecure: true
+
+  otlp/digma:
+    endpoint: "host.docker.internal:5050"
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [logging,otlp/collector4317]
+
+    traces:
+      receivers: [otlp]
+      exporters: [logging,otlp/collector4317]
+
+    logs:
+      receivers: [otlp]
+      exporters: [logging,otlp/collector4317]
