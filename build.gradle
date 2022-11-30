@@ -2,6 +2,7 @@ plugins {
   id 'org.springframework.boot' version '2.7.6'
   id 'io.spring.dependency-management' version '1.1.0'
   id 'java'
+  id 'de.undercouch.download' version '4.1.1'
 }
 
 apply plugin: 'java'
@@ -56,4 +57,24 @@ task runClientTester(type: JavaExec) {
     description = "Run Client Tester"
     classpath = sourceSets.main.runtimeClasspath
     main = 'petclinic.client.ClientTester'
+}
+
+bootJar {
+    dependsOn("downloadOtelAgent")
+    dependsOn("downloadDigmaAgentExtension")
+}
+
+// Download the OpenTelemetry java agent and put it in the build directory
+task downloadOtelAgent(type: Download) {
+    src "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar"
+    dest project.buildDir.toString() + "/otel/opentelemetry-javaagent.jar"
+    overwrite true
+}
+
+// Download the Digma OpenTelemetry agent extension and put it in the build directory
+task downloadDigmaAgentExtension(type: Download) {
+    //src "https://s01.oss.sonatype.org/content/repositories/snapshots/io/github/digma-ai/digma-otel-agent-extension/0.4.17-SNAPSHOT/digma-otel-agent-extension-0.4.17-20221127.104057-1-all.jar"
+    src "https://s01.oss.sonatype.org/content/repositories/releases/io/github/digma-ai/digma-otel-agent-extension/0.4.22/digma-otel-agent-extension-0.4.22.jar"
+    dest project.buildDir.toString() + "/otel/digma-otel-agent-extension.jar"
+    overwrite true
 }
