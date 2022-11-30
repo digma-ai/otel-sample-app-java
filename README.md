@@ -46,7 +46,7 @@ Run the following command in order to run ClientTester, which will access the ap
 
 ### Use the application Manually
 
-Browse to [Local PetClinic](http://localhost:9876/) and use the application freely.
+Browse to [Local PetClinic](http://localhost:9753/) and use the application freely.
 
 ![image](https://user-images.githubusercontent.com/104715391/203006282-b1db606f-1e92-46cd-8a62-40a96d80d7d6.png)
 

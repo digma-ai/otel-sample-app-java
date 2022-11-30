@@ -22,7 +22,7 @@ service:
   pipelines:
     metrics:
       receivers: [otlp]
-      exporters: [logging,otlp/collector4317]
+      exporters: [logging]
 
     traces:
       receivers: [otlp]
@@ -30,4 +30,4 @@ service:
 
     logs:
       receivers: [otlp]
-      exporters: [logging,otlp/collector4317]
+      exporters: [logging]
