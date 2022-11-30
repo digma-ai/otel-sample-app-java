@@ -3,6 +3,7 @@ package org.springframework.samples.petclinic.sample;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -24,6 +25,12 @@ public class SampleInsightsController {
 	@WithSpan(value = "SpanBottleneck 2")
 	private void doWorkForBottleneck2() {
 		delay(50);
+	}
+
+	@GetMapping("/SlowEndpoint")
+	public String genSlowEndpoint(@RequestParam(name = "extraLatency") long extraLatency) {
+		delay(extraLatency);
+		return "SlowEndpoint";
 	}
 
 	@GetMapping("/HighUsage")
