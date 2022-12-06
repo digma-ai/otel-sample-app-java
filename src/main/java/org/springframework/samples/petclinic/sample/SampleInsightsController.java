@@ -4,7 +4,9 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
+import io.opentelemetry.instrumentation.api.instrumenter.LocalRootSpan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.samples.petclinic.system.AppException;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -79,10 +81,10 @@ public class SampleInsightsController {
 		throw new RuntimeException("Some unexpected runtime exception");
 	}
 
-	@GetMapping("ErrorRecordedNotInRoot")
-	public String genErrorRecordedNotInRoot() {
+	@GetMapping("ErrorRecordedOnDeeplyNestedSpan")
+	public String genErrorRecordedOnDeeplyNestedSpan() {
 		methodThatRecordsError();
-		return "ErrorRecordedNotInRoot";
+		return "ErrorRecordedOnDeeplyNestedSpan";
 	}
 
 	private void methodThatRecordsError() {
@@ -96,6 +98,30 @@ public class SampleInsightsController {
 		} finally {
 			span.end();
 		}
+	}
+
+	@GetMapping("ErrorRecordedOnCurrentSpan")
+	public String genErrorRecordedOnCurrentSpan() {
+		Span span = Span.current();
+		try {
+			throw new AppException("on current span");
+		} catch (AppException e) {
+			span.recordException(e);
+			span.setStatus(StatusCode.ERROR);
+		}
+		return "ErrorRecordedOnCurrentSpan";
+	}
+
+	@GetMapping("ErrorRecordedOnLocalRootSpan")
+	public String genErrorRecordedOnLocalRootSpan() {
+		Span span = LocalRootSpan.current();
+		try {
+			throw new AppException("on local root span");
+		} catch (AppException e) {
+			span.recordException(e);
+			span.setStatus(StatusCode.ERROR);
+		}
+		return "ErrorRecordedOnLocalRootSpan";
 	}
 
 	private static void delay(long millis) {

@@ -100,6 +100,21 @@ public class ClientTester {
 			myClient.execute("/HighUsage");
 		}
 
+		logger.info("***** calling ErrorRecordedOnDeeplyNestedSpan *****");
+		for (int ix = 1; ix <= 2; ix++) {
+			myClient.execute("/ErrorRecordedOnDeeplyNestedSpan");
+		}
+
+		logger.info("***** calling ErrorRecordedOnLocalRootSpan *****");
+		for (int ix = 1; ix <= 2; ix++) {
+			myClient.execute("/ErrorRecordedOnLocalRootSpan");
+		}
+
+		logger.info("***** calling ErrorRecordedOnCurrentSpan *****");
+		for (int ix = 1; ix <= 2; ix++) {
+			myClient.execute("/ErrorRecordedOnCurrentSpan");
+		}
+
 		logger.info("***** END generateInsightData *****");
 	}
 
