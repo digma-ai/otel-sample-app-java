@@ -19,7 +19,11 @@ jobs:
       - checkout
       - run:
           name: "Run bootJar"
-          command: "./gradlew bootJar"
+          command: |
+            "sudo apt-update"
+            "sudo apt install openjdk-17-jdk openjdk-17-jre"
+            "sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-1.17.0-openjdk-amd64 3"
+            "./gradlew bootJar"
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/configuration-reference/#workflows
