@@ -35,7 +35,7 @@ jobs:
       - run:
           name: "Wait for app to be up"
           command: |
-            timeout 22 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 443
+            timeout 22 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 9753
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/configuration-reference/#workflows
