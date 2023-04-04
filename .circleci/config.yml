@@ -31,6 +31,9 @@ jobs:
       - run:
           name: "Run App"
           command: |
+            export JAVA_TOOL_OPTIONS="-javaagent:./build/otel/javaagent.jar -Dotel.exporter.otlp.endpoint=http://${DIGMA_URL}:5050 -Dotel.javaagent.extensions=./build/otel/digma-otel-agent-extension.jar"
+            export OTEL_SERVICE_NAME={--ENTER YOUR SERVICE NAME HERE--}
+            export DEPLOYMENT_ENV=LOCAL_DOCKER
             java -jar ./build/libs/spring-petclinic-3.0.0.jar &
       - run:
           name: "Wait for app to be up"
