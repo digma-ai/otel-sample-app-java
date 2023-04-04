@@ -31,7 +31,11 @@ jobs:
       - run:
           name: "Run App"
           command: |
-            java -jar ./build/libs/spring-petclinic-3.0.0-plain.jar
+            java -jar ./build/libs/spring-petclinic-3.0.0.jar &
+      - run:
+          name: "Wait for app to be up"
+          command: |
+            timeout 22 sh -c 'until nc -z $0 $1; do sleep 1; done' localhost 443
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/configuration-reference/#workflows
