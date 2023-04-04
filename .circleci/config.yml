@@ -23,6 +23,7 @@ jobs:
             sudo apt update
             sudo apt install openjdk-17-jdk openjdk-17-jre
             sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-17-openjdk-amd64/bin/java 3
+            sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
             ./gradlew bootJar
 
 # Orchestrate jobs using workflows
