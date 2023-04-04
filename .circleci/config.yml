@@ -31,7 +31,7 @@ jobs:
       - run:
           name: "Run App"
           command: |
-            java ./build/libs/spring-petclinic-3.0.0-plain.jar
+            java -jar ./build/libs/spring-petclinic-3.0.0-plain.jar
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/configuration-reference/#workflows
