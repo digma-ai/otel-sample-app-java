@@ -12,7 +12,7 @@ group = 'org.springframework.samples'
 version = '3.0.0'
 sourceCompatibility = '17'
 
-def OPENTELEMETRY_VERSION = '1.22.1'
+def OPENTELEMETRY_VERSION = '1.26.0'
 
 repositories {
   mavenLocal()
@@ -43,7 +43,8 @@ dependencies {
   developmentOnly 'org.springframework.boot:spring-boot-devtools'
   testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
-  //Enables instrumentation using @WithSpan
+
+    //Enables instrumentation using @WithSpan
   implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:${OPENTELEMETRY_VERSION}")
   implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-api:${OPENTELEMETRY_VERSION}")
 
@@ -65,7 +66,7 @@ task runClientTester(type: JavaExec) {
     jvmArgs("-javaagent:build/otel/opentelemetry-javaagent.jar")
     systemProperty("otel.service.name", "ClientTesterOfPetClinic")
     systemProperty("otel.traces.exporter", "otlp")
-    environment("OTEL_RESOURCE_ATTRIBUTES", "digma.environment=INTEGRATION")
+    environment("OTEL_RESOURCE_ATTRIBUTES", "digma.environment=TEST")
     systemProperty("otel.exporter.otlp.traces.endpoint", "http://localhost:5050")
     environment("PETSHOP_URL", "http://localhost:9753")
 
