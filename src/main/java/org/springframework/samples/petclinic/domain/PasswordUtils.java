@@ -7,7 +7,7 @@ public class PasswordUtils {
 	@WithSpan
 	public boolean vldtPswd(String usr, String pswd) {
 		try {
-			Thread.sleep(30);
+			Thread.sleep(800);
 		}
 		catch (InterruptedException e) {
 			throw new RuntimeException(e);

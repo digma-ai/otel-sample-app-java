@@ -15,6 +15,7 @@
  */
 package org.springframework.samples.petclinic.owner;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +23,7 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +45,8 @@ import org.springframework.web.servlet.ModelAndView;
 
 import jakarta.validation.Valid;
 
+import static io.opentelemetry.api.GlobalOpenTelemetry.getTracer;
+
 /**
  * @author Juergen Hoeller
  * @author Ken Krebs
@@ -51,6 +55,9 @@ import jakarta.validation.Valid;
  */
 @Controller
 class OwnerController implements InitializingBean {
+
+
+
 
 	private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
 
@@ -63,7 +70,9 @@ class OwnerController implements InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		this.otelTracer = openTelemetry.getTracer("OwnerController");
+		//this.otelTracer = openTelemetry.getTracer("OwnerController");
+
+		this.otelTracer = getTracer("OwnerController");
 
 		validator = new OwnerValidation(this.otelTracer);
 	}
@@ -87,12 +96,14 @@ class OwnerController implements InitializingBean {
 	@GetMapping("/owners/new")
 	public String initCreationForm(Map<String, Object> model) {
 		Owner owner = new Owner();
+
 		validator.ValidateOwnerWithExternalService(owner);
 		model.put("owner", owner);
 		validator.ValidateUserAccess("admin", "pwd", "fullaccess");
 
 		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 	}
+
 
 	@PostMapping("/owners/new")
 	public String processCreationForm(@Valid Owner owner, BindingResult result) {
@@ -168,6 +179,7 @@ class OwnerController implements InitializingBean {
 		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 	}
 
+	@WithSpan
 	private static void delay(long millis) {
 		try {
 			Thread.sleep(millis);
@@ -193,6 +205,8 @@ class OwnerController implements InitializingBean {
 		this.owners.save(owner);
 		return "redirect:/owners/{ownerId}";
 	}
+
+
 
 	/**
 	 * Custom handler for displaying an owner.
