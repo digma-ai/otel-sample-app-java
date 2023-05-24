@@ -104,6 +104,7 @@ class OwnerController implements InitializingBean {
 		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 	}
 
+
 	@PostMapping("/owners/new")
 	public String processCreationForm(@Valid Owner owner, BindingResult result) {
 		if (result.hasErrors()) {
