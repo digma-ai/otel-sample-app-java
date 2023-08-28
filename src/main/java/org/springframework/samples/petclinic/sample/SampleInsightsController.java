@@ -10,11 +10,9 @@ import io.opentelemetry.instrumentation.api.instrumenter.LocalRootSpan;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.samples.petclinic.system.AppException;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -165,6 +163,28 @@ public class SampleInsightsController implements InitializingBean {
 			span.end();
 		}
 		return "genNPlusOneWithInternalSpan";
+	}
+
+	@GetMapping("/LiveDataTest")
+	public String ErrorEndpoint(@RequestParam(name = "extraLatency") long extraLatency, @RequestParam(name = "fail") boolean fail) throws Exception {
+		doSomeWorkA(extraLatency);
+		Span span = otelTracer.spanBuilder("query_users_by_id")
+			.setSpanKind(SpanKind.CLIENT)
+			.setAttribute("db.system", "other_sql")
+			.setAttribute("db.statement", "select * from users where id = :id")
+			.startSpan();
+		if(fail) {
+			try {
+				throw new AppException("on local root span");
+			} catch (AppException e) {
+				span.recordException(e);
+				span.setStatus(StatusCode.ERROR);
+			}
+			span.end();
+			return "ErrorRecordedOnDbSpan";
+		}
+		span.end();
+		return "NoErrorRecordedOnDbSpan";
 	}
 
 	private void DbQuery() {
