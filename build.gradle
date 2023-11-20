@@ -12,7 +12,7 @@ group = 'org.springframework.samples'
 version = '3.1.2'
 sourceCompatibility = '17'
 
-def OPENTELEMETRY_VERSION = '1.31.0'
+def OPENTELEMETRY_VERSION = '1.32.0'
 
 repositories {
   mavenLocal()

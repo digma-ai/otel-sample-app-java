@@ -32,7 +32,7 @@
     <maven-checkstyle.version>3.2.2</maven-checkstyle.version>
     <nohttp-checkstyle.version>0.0.11</nohttp-checkstyle.version>
     <spring-format.version>0.0.39</spring-format.version>
-    <otel.version>1.31.0</otel.version>
+    <otel.version>1.32.0</otel.version>
 
   </properties>
 
