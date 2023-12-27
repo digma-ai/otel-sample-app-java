@@ -31,6 +31,9 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 public class PetClinicApplication {
 
 	public static void main(String[] args) {
+
+		System.out.println("OTEL_RESOURCE_ATTRIBUTES="+System.getenv("OTEL_RESOURCE_ATTRIBUTES"));
+
 		SpringApplication.run(PetClinicApplication.class, args);
 	}
 
