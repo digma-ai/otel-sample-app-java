@@ -30,7 +30,6 @@ public class OwnerValidation {
 
 	@WithSpan
 	public void ValidateOwnerWithExternalService(Owner owner) {
-
 		this.AuthServiceValidateUser(owner);
 	}
 
