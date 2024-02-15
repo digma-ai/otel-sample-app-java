@@ -178,6 +178,44 @@ public class SampleInsightsController implements InitializingBean {
 		return "Success";
 	}
 
+	@GetMapping("flow1")
+	public void flow1() {
+		a();
+	}
+
+	@GetMapping("flow2")
+	public void flow2() {
+		c();
+	}
+
+	@WithSpan
+	private void a() {
+		b();
+	}
+
+
+
+	private void b() {
+		Span span = otelTracer.spanBuilder("span"+"b").startSpan();
+		try {
+			delay(20);
+			c();
+		}
+		finally {
+			span.end();
+		}
+	}
+
+	private void c() {
+		Span span = otelTracer.spanBuilder("span"+"c").startSpan();
+		try {
+			delay(20);
+		}
+		finally {
+			span.end();
+		}
+	}
+
 	private void GenerateSpan(String spanName){
 		Span span = otelTracer.spanBuilder(spanName).startSpan();
 		try {
