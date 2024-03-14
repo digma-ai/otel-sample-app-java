@@ -69,11 +69,11 @@ task runClientTester(type: JavaExec) {
     description = "Run Client Tester"
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'petclinic.client.ClientTester'
-    jvmArgs("-javaagent:build/otel/opentelemetry-javaagent.jar")
-    systemProperty("otel.service.name", "ClientTesterOfPetClinic")
-    systemProperty("otel.traces.exporter", "otlp")
-    environment("OTEL_RESOURCE_ATTRIBUTES", "digma.environment=DEV")
-    systemProperty("otel.exporter.otlp.traces.endpoint", "http://localhost:5050")
+//    jvmArgs("-javaagent:build/otel/opentelemetry-javaagent.jar")
+//    systemProperty("otel.service.name", "ClientTesterOfPetClinic")
+//    systemProperty("otel.traces.exporter", "otlp")
+//    environment("OTEL_RESOURCE_ATTRIBUTES", "digma.environment=DEV")
+//    systemProperty("otel.exporter.otlp.traces.endpoint", "http://localhost:5050")
     environment("PETSHOP_URL", "http://localhost:9753")
 }
 

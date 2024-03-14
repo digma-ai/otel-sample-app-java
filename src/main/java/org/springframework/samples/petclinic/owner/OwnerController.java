@@ -15,14 +15,11 @@
  */
 package org.springframework.samples.petclinic.owner;
 
-import java.util.List;
-import java.util.Map;
-
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
+import jakarta.validation.Valid;
+import my.test.otel.inst.MyClass;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -33,15 +30,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.InitBinder;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
-import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Juergen Hoeller
@@ -55,6 +48,8 @@ class OwnerController implements InitializingBean {
 	private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
 
 	private OwnerValidation validator;
+
+	private MyClass myClass = new MyClass();
 
 	@Autowired
 	private OpenTelemetry openTelemetry;
@@ -110,13 +105,14 @@ class OwnerController implements InitializingBean {
 
 	@GetMapping("/owners/find")
 	public String initFindForm() {
+		myClass.myMethod1();
 		return "owners/findOwners";
 	}
 
 	@GetMapping("/owners")
 	public String processFindForm(@RequestParam(defaultValue = "1") int page, Owner owner, BindingResult result,
 			Model model) {
-
+		myClass.myMethod2();
 		validator.ValidateUserAccess("admin", "pwd", "fullaccess");
 
 		// allow parameterless GET request for /owners to return all records
