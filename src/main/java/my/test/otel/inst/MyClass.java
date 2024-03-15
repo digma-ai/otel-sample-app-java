@@ -11,7 +11,7 @@ public class MyClass {
 	public void myMethod2(){
 		System.out.printf("aa");
 
-		//should be bottleneck ?
+		//should be bottleneck
 		try {
 			Thread.sleep(2000);
 		} catch (InterruptedException e) {
