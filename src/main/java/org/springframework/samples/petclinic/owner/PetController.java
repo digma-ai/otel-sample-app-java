@@ -18,6 +18,7 @@ package org.springframework.samples.petclinic.owner;
 import java.time.LocalDate;
 import java.util.Collection;
 
+import my.test.otel.inst2.MyClass2;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.util.StringUtils;
@@ -146,6 +147,9 @@ class PetController {
 
 		owner.addPet(pet);
 		this.owners.save(owner);
+
+		new MyClass2().myThrowsExceptionMethod();
+
 		return "redirect:/owners/{ownerId}";
 	}
 

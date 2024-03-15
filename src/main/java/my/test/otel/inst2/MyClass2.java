@@ -1,4 +1,4 @@
-package my.test.otel.inst;
+package my.test.otel.inst2;
 
 public class MyClass2 {
 
@@ -13,6 +13,10 @@ public class MyClass2 {
 
 	public void notInstrumented(){
 		System.out.println("");
+	}
+
+	public void myThrowsExceptionMethod(){
+		throw new UnsupportedOperationException("test instrument myThrowsExceptionMethod");
 	}
 
 }
