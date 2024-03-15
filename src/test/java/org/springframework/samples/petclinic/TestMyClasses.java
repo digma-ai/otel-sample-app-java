@@ -18,7 +18,7 @@ public class TestMyClasses {
 		MyClass2 myClass2 = new MyClass2();
 		myClass2.myMethodInMyClass2();
 		myClass2.myMethodInMyClass2("test");
-		myClass2.notInstrumented();
+		myClass2.myNotCalledFromProduction();
 	}
 
 

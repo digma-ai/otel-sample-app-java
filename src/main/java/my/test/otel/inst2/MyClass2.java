@@ -11,7 +11,7 @@ public class MyClass2 {
 		System.out.printf(str);
 	}
 
-	public void notInstrumented(){
+	public void myNotCalledFromProduction(){
 		System.out.println("");
 	}
 
