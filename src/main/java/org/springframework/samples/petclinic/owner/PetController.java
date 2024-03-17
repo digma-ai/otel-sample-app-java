@@ -18,6 +18,7 @@ package org.springframework.samples.petclinic.owner;
 import java.time.LocalDate;
 import java.util.Collection;
 
+import my.test.otel.inst.subpackage.MyClassInSubPackage;
 import my.test.otel.inst2.MyClass2;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -96,6 +97,9 @@ class PetController {
 
 	@PostMapping("/pets/new")
 	public String processCreationForm(Owner owner, @Valid Pet pet, BindingResult result, ModelMap model) {
+
+		new MyClassInSubPackage().calledFromProcessCreationForm();
+
 		if (StringUtils.hasText(pet.getName()) && pet.isNew() && owner.getPet(pet.getName(), true) != null) {
 			result.rejectValue("name", "duplicate", "already exists");
 		}
@@ -124,6 +128,8 @@ class PetController {
 
 	@PostMapping("/pets/{petId}/edit")
 	public String processUpdateForm(@Valid Pet pet, BindingResult result, Owner owner, ModelMap model) {
+
+		new MyClassInSubPackage().calledFromProcessUpdateForm();
 
 		String petName = pet.getName();
 

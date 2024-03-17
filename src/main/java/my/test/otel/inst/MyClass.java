@@ -4,11 +4,11 @@ import my.test.otel.inst2.MyClass2;
 
 public class MyClass {
 
-	public void myMethod1(){
+	public void calledFromInitFindForm(){
 		System.out.printf("aa");
 	}
 
-	public void myMethod2(){
+	public void calledFromProcessFindForm(){
 		System.out.printf("aa");
 
 		//should be bottleneck
@@ -18,7 +18,7 @@ public class MyClass {
 			throw new RuntimeException(e);
 		}
 
-		new MyClass2().myMethodInMyClass2();
+		new MyClass2().calledFromMyClass();
 
 	}
 

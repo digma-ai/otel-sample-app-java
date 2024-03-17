@@ -17,6 +17,8 @@ package org.springframework.samples.petclinic.owner;
 
 import java.util.Map;
 
+import my.test.otel.inst.MyClass;
+import my.test.otel.inst2.MyClass2;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
@@ -74,6 +76,7 @@ class VisitController {
 	// called
 	@GetMapping("/owners/{ownerId}/pets/{petId}/visits/new")
 	public String initNewVisitForm() {
+		new MyClass2().calledFromInitNewVisitForm();
 		return "pets/createOrUpdateVisitForm";
 	}
 
@@ -82,6 +85,7 @@ class VisitController {
 	@PostMapping("/owners/{ownerId}/pets/{petId}/visits/new")
 	public String processNewVisitForm(@ModelAttribute Owner owner, @PathVariable int petId, @Valid Visit visit,
 			BindingResult result) {
+		new MyClass2().calledFromProcessNewVisitForm();
 		if (result.hasErrors()) {
 			return "pets/createOrUpdateVisitForm";
 		}

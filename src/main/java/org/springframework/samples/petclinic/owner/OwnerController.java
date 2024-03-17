@@ -20,6 +20,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.validation.Valid;
 import my.test.otel.inst.MyClass;
+import my.test.otel.inst2.MyClass2;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -50,6 +51,7 @@ class OwnerController implements InitializingBean {
 	private OwnerValidation validator;
 
 	private MyClass myClass = new MyClass();
+	private MyClass2 myClass2 = new MyClass2();
 
 	@Autowired
 	private OpenTelemetry openTelemetry;
@@ -76,6 +78,7 @@ class OwnerController implements InitializingBean {
 
 	@ModelAttribute("owner")
 	public Owner findOwner(@PathVariable(name = "ownerId", required = false) Integer ownerId) {
+		myClass2.calledFromFindOwner();
 		return ownerId == null ? new Owner() : this.owners.findById(ownerId);
 	}
 
@@ -105,14 +108,14 @@ class OwnerController implements InitializingBean {
 
 	@GetMapping("/owners/find")
 	public String initFindForm() {
-		myClass.myMethod1();
+		myClass.calledFromInitFindForm();
 		return "owners/findOwners";
 	}
 
 	@GetMapping("/owners")
 	public String processFindForm(@RequestParam(defaultValue = "1") int page, Owner owner, BindingResult result,
 			Model model) {
-		myClass.myMethod2();
+		myClass.calledFromProcessFindForm();
 		validator.ValidateUserAccess("admin", "pwd", "fullaccess");
 
 		// allow parameterless GET request for /owners to return all records
