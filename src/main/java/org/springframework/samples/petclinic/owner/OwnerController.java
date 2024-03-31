@@ -23,6 +23,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
+import my.extended.pkg.MyClass;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -54,6 +55,8 @@ class OwnerController implements InitializingBean {
 
 	private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
 
+	private MyClass myClass = new MyClass();
+
 	private OwnerValidation validator;
 
 	@Autowired
@@ -81,11 +84,15 @@ class OwnerController implements InitializingBean {
 
 	@ModelAttribute("owner")
 	public Owner findOwner(@PathVariable(name = "ownerId", required = false) Integer ownerId) {
+		String someProp = myClass.getMyStringProperty();
+		myClass.doSomething();
 		return ownerId == null ? new Owner() : this.owners.findById(ownerId);
 	}
 
 	@GetMapping("/owners/new")
 	public String initCreationForm(Map<String, Object> model) {
+		String someProp = myClass.getMyStringProperty();
+		myClass.doAnotherSomething();
 		Owner owner = new Owner();
 		validator.ValidateOwnerWithExternalService(owner);
 		model.put("owner", owner);
@@ -96,6 +103,7 @@ class OwnerController implements InitializingBean {
 
 	@PostMapping("/owners/new")
 	public String processCreationForm(@Valid Owner owner, BindingResult result) {
+		myClass.doSomething();
 		if (result.hasErrors()) {
 			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 		}
@@ -110,6 +118,8 @@ class OwnerController implements InitializingBean {
 
 	@GetMapping("/owners/find")
 	public String initFindForm() {
+		String someProp = myClass.getMyStringProperty();
+		myClass.doSomething();
 		return "owners/findOwners";
 	}
 
@@ -137,6 +147,9 @@ class OwnerController implements InitializingBean {
 			owner = ownersResults.iterator().next();
 			return "redirect:/owners/" + owner.getId();
 		}
+
+		String someProp = myClass.getMyStringProperty();
+		myClass.doSomething();
 
 		// multiple owners found
 		return addPaginationModel(page, model, ownersResults);
