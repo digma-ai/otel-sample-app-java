@@ -1,10 +1,9 @@
 package org.springframework.samples.petclinic.sample;
 
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.StatusCode;
-import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.*;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.instrumentation.api.instrumenter.LocalRootSpan;
 import org.springframework.beans.factory.InitializingBean;
@@ -172,16 +171,16 @@ public class SampleInsightsController implements InitializingBean {
 	@GetMapping("GenerateSpans")
 	public String generateSpans(@RequestParam(name = "uniqueSpans") long uniqueSpans) {
 		for (int i = 0; i < uniqueSpans; i++) {
-			GenerateSpan("GeneratedSpan_" + i);
+			GenerateSpan("GeneratedSpan_" + i, 10);
 		}
 
 		return "Success";
 	}
 
-	private void GenerateSpan(String spanName){
+	private void GenerateSpan(String spanName, int delay){
 		Span span = otelTracer.spanBuilder(spanName).startSpan();
 		try {
-			delay(0);
+			delay(delay);
 		}
 		finally {
 			span.end();
@@ -202,10 +201,72 @@ public class SampleInsightsController implements InitializingBean {
 			int randomElement = numberArray.get(randomIndex);
 			numberArray.remove(randomIndex);
 			resultList.add(randomElement);
-			GenerateSpan("GeneratedSpan_" + randomElement);
+			GenerateSpan("GeneratedSpan_" + randomElement, 10);
 		}
 
 		return resultList;
+	}
+
+	@GetMapping("GenerateEndpointSpans")
+	public String generateEndpointSpans(
+		@RequestParam(value = "count", required = false, defaultValue = "500") int count) {
+
+		for (int i = 0; i < count; i++) {
+			createEndpointSpan(i);
+		}
+
+		return "Success";
+	}
+
+	@GetMapping("GenerateDbSpans")
+	public String generateDbSpans(
+		@RequestParam(value = "count", required = false, defaultValue = "3000") int count) {
+
+		for (int i = 0; i < count; i++) {
+			createDbSpan(i, 10);
+		}
+
+		return "Success";
+	}
+
+	private void createEndpointSpan(int i) {
+		SpanBuilder parentSpanBuilder = otelTracer.spanBuilder(Integer.toString(i))
+			.setSpanKind(SpanKind.CLIENT)
+			.setAttribute("http.method", "GET")
+			.setAttribute("http.url", "http://dog.com/users/" + i);
+		Span clientSpan = parentSpanBuilder.startSpan();
+
+		try (Scope clientScope = clientSpan.makeCurrent()) {
+			try {
+				Span serverSpan = otelTracer.spanBuilder(Integer.toString(i))
+					.setParent(Context.current())
+					.setSpanKind(SpanKind.SERVER)
+					.setAttribute("http.method", "GET")
+					.setAttribute("http.route", "/users/" + i)
+					.startSpan();
+				try (Scope serverScope = serverSpan.makeCurrent()) {
+					delay(10); // Simulated server delay
+				} finally {
+					serverSpan.end();
+				}
+			} finally {
+				clientSpan.end();
+			}
+		}
+	}
+
+	private void createDbSpan(int i, int delay) {
+		Span span = otelTracer.spanBuilder("query_users_by_id")
+			.setSpanKind(SpanKind.CLIENT)
+			.setAttribute("db.system", "other_sql")
+			.setAttribute("db.statement", "select * from users_"+ i + " where id = :id")
+			.startSpan();
+
+		try {
+			delay(delay);
+		} finally {
+			span.end();
+		}
 	}
 
 	private void DbQuery() {
