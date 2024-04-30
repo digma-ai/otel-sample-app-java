@@ -5,15 +5,13 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.instrumentation.api.instrumenter.LocalRootSpan;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.samples.petclinic.system.AppException;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +26,7 @@ public class SampleInsightsController implements InitializingBean {
 
 	@Autowired
 	private OpenTelemetry openTelemetry;
+	private Random random = new Random(7);
 
 	private Tracer otelTracer;
 	private ExecutorService executorService;
@@ -36,6 +35,40 @@ public class SampleInsightsController implements InitializingBean {
 	public void afterPropertiesSet() throws Exception {
 		this.otelTracer = openTelemetry.getTracer("SampleInsightsController");
 		this.executorService = Executors.newFixedThreadPool(5);
+	}
+
+	@GetMapping("/Process/{count}")
+	public String Process(@PathVariable("count") int count){
+		Random randomLocal = new Random(7);
+		for (int i = 0; i < count; i++) {
+			int children = randomLocal.nextInt(1, 10);
+			SubProcess(i, children);
+		}
+		return "done";
+	}
+
+	private void SubProcess(int index,  int children){
+		Span span = otelTracer.spanBuilder("SubProcess#"+index).startSpan();
+		try (Scope scope = span.makeCurrent()) {
+			int childDurationNano = random.nextInt(100_000, 999_999) / children;
+			for (int i = 0; i < children; i++) {
+				double queryDurationNano = random.nextDouble(childDurationNano*0.8,childDurationNano);
+				DbQuery("table_"+i, (int)queryDurationNano);
+			}
+		} catch (InterruptedException e) {
+			span.recordException(e);
+			span.setStatus(StatusCode.ERROR);
+        } finally {
+			span.end();
+		}
+	}
+
+	@WithSpan(kind = SpanKind.CLIENT)
+	private void DbQuery(String tableName, int queryDurationNano) throws InterruptedException {
+		var span = Span.current();
+		span.setAttribute("db.system", "other_sql");
+		span.setAttribute("db.statement", "select * "+tableName+" users where id = :id");
+		Thread.sleep(0, queryDurationNano);
 	}
 
 	@GetMapping("/SpanBottleneck")
@@ -147,6 +180,30 @@ public class SampleInsightsController implements InitializingBean {
 		return "genAsyncSpanVar01";
 	}
 
+	@GetMapping("EP1")
+	public String ep1(){
+		for (int i = 0; i < 2; i++) {
+			DbQuery();
+		}
+		return "EP1";
+	}
+
+	@GetMapping("EP2")
+	public String ep2(){
+		for (int i = 0; i < 3; i++) {
+			DbQuery();
+		}
+		return "EP2";
+	}
+
+	@WithSpan(kind = SpanKind.CLIENT)
+	private void DbQuery() {
+		var span = Span.current();
+		span.setAttribute("db.system", "other_sql");
+		span.setAttribute("db.statement", "select * from users where id = :id");
+	}
+
+
 	@GetMapping("NPlusOneWithoutInternalSpan")
 	public String genNPlusOneWithoutInternalSpan() {
 		for (int i = 0; i < 100; i++) {
@@ -206,23 +263,6 @@ public class SampleInsightsController implements InitializingBean {
 		}
 
 		return resultList;
-	}
-
-	private void DbQuery() {
-		// simulate SpanKind of DB query
-		// see
-		// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md
-		Span span = otelTracer.spanBuilder("query_users_by_id")
-			.setSpanKind(SpanKind.CLIENT)
-			.setAttribute("db.system", "other_sql")
-			.setAttribute("db.statement", "select * from users where id = :id")
-			.startSpan();
-
-		try {
-			// delay(1);
-		} finally {
-			span.end();
-		}
 	}
 
 	@WithSpan
