@@ -41,8 +41,8 @@ public class SampleInsightsController implements InitializingBean {
 	public String Process(@PathVariable("count") int count){
 		Random randomLocal = new Random(7);
 		for (int i = 0; i < count; i++) {
-			int children = randomLocal.nextInt(1, 10);
-			SubProcess(i, children);
+			//int children = randomLocal.nextInt(1, 10);
+			SubProcess(i, 10);
 		}
 		return "done";
 	}
