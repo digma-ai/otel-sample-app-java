@@ -84,6 +84,21 @@ public class ClientTester {
 
 		logger.info("***** START generating traffic *****");
 
+		for (int ix = 1; ix <= 10; ix++) {
+			try {
+				myClient.execute("/DemoMultiSourceError");
+			}
+			catch (Exception e){
+				System.out.println(e);
+			}
+		}
+		try {
+			myClient.execute("/DemoRethrow");
+		}
+		catch (Exception e){
+			System.out.println(e);
+		}
+
 		logger.info("***** Slow traffic *****");
 		for (int ix = 1; ix <= 2; ix++) {
 			myClient.execute("/SlowEndpoint?extraLatency=2500");

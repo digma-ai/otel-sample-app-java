@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.management.openmbean.InvalidOpenTypeException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,6 +29,7 @@ public class SampleInsightsController implements InitializingBean {
 
 	@Autowired
 	private OpenTelemetry openTelemetry;
+	private DummyService1 dummyService1;
 
 	private Tracer otelTracer;
 	private ExecutorService executorService;
@@ -36,6 +38,36 @@ public class SampleInsightsController implements InitializingBean {
 	public void afterPropertiesSet() throws Exception {
 		this.otelTracer = openTelemetry.getTracer("SampleInsightsController");
 		this.executorService = Executors.newFixedThreadPool(5);
+		this.dummyService1 = new DummyService1(openTelemetry);
+
+	}
+
+	@GetMapping("ErrorsScenarios")
+	public void ErrorsScenarios() {
+		Span span = Span.current();
+		try {
+			throw new AppException("on current span");
+		} catch (AppException e) {
+			span.recordException(e);
+			span.setStatus(StatusCode.ERROR);
+		}
+
+		try {
+			dummyService1.Check();
+		}
+		catch (InvalidOpenTypeException e)
+		{
+			throw e;
+		}
+	}
+	@GetMapping("DemoMultiSourceError")
+	public void DemoMultiSourceError() {
+		dummyService1.ThrowFromDifferentSources();
+	}
+
+	@GetMapping("DemoRethrow")
+	public void DemoRethrow() {
+		dummyService1.DemoRethrow();
 	}
 
 	@GetMapping("/SpanBottleneck")
