@@ -87,6 +87,9 @@ class ClinicServiceTests {
 	public static void printPid(){
 		ProcessHandle processHandle = ProcessHandle.current();
 		long pid = processHandle.pid();
+		System.out.println("*************************************");
+		System.out.println("*************************************");
+		System.out.println("*************************************");
 		System.out.println("Process ID: " + pid);
 	}
 
