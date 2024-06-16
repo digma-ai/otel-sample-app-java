@@ -103,3 +103,13 @@ task downloadDigmaAgentExtension(type: Download) {
     dest project.buildDir.toString() + "/otel/digma-otel-agent-extension.jar"
     overwrite true
 }
+
+test {
+    testLogging {
+        afterSuite { desc, result ->
+            if (!desc.parent) { // will match the outermost suite
+                println "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+            }
+        }
+    }
+}
