@@ -107,6 +107,8 @@ task downloadDigmaAgentExtension(type: Download) {
 test {
     maxParallelForks = 1
     testLogging {
+//        events("passed", "skipped", "failed", "STANDARD_OUT", "STANDARD_ERROR")
+//        outputs 'standard', 'standardError'
         afterSuite { desc, result ->
             if (!desc.parent) { // will match the outermost suite
                 println "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"

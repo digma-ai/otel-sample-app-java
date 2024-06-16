@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.LocalDate;
 import java.util.Collection;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -80,6 +81,15 @@ class ClinicServiceTests {
 	protected VetRepository vets;
 
 	Pageable pageable;
+
+
+	@BeforeAll
+	public static void printPid(){
+		ProcessHandle processHandle = ProcessHandle.current();
+		long pid = processHandle.pid();
+		System.out.println("Process ID: " + pid);
+	}
+
 
 	@Test
 	void shouldFindOwnersByLastName() {
