@@ -115,4 +115,6 @@ test {
             }
         }
     }
+
+    //environment("JAVA_TOOL_OPTIONS","-javaagent:/Users/ec2-user/work/otel-sample-app-java/tmp/digma-agent.jar -Ddigma.agent.debug=true -javaagent:/Users/ec2-user/work/otel-sample-app-java/tmp/opentelemetry-javaagent.jar -Dotel.javaagent.extensions=/Users/ec2-user/work/otel-sample-app-java/tmp/digma-otel-agent-extension.jar -Dotel.exporter.otlp.traces.endpoint=https://collector.meloona01.digma.systems -Dotel.javaagent.experimental.field-injection.enabled=false -Dotel.service.name=spring-petclinic.test -Ddigma.autoinstrument.packages=org.springframework.samples.petclinic -Dotel.traces.exporter=otlp -Dotel.exporter.otlp.protocol=grpc -Dotel.metrics.exporter=none -Dotel.logs.exporter=none -Dotel.instrumentation.common.experimental.controller.telemetry.enabled=true -Dotel.instrumentation.common.experimental.view.telemetry.enabled=true -Dotel.instrumentation.experimental.span-suppression-strategy=none -Dotel.instrumentation.digma-methods.enabled=false  -Dorg.digma.marker=true")
 }
