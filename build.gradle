@@ -105,6 +105,7 @@ task downloadDigmaAgentExtension(type: Download) {
 }
 
 test {
+    maxParallelForks = 1
     testLogging {
         afterSuite { desc, result ->
             if (!desc.parent) { // will match the outermost suite
