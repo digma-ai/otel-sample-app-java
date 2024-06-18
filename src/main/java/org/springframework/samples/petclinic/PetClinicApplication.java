@@ -24,6 +24,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ImportRuntimeHints;
 
 import java.lang.instrument.Instrumentation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.BiConsumer;
 
@@ -74,7 +75,11 @@ public class PetClinicApplication {
 					instrumentation = (Instrumentation) installer.getMethod("getInstrumentation").invoke(null);
 
 				} catch (Exception e) {
-					e.printStackTrace();
+					String msg = e.toString();
+					if (e instanceof InvocationTargetException && ((InvocationTargetException) e).getTargetException() != null){
+						msg = ((InvocationTargetException) e).getTargetException().toString();
+					}
+					System.out.println("error trying to get instrumentation from bytebuddy Installer "+msg);
 				}
 
 				if (instrumentation != null){
