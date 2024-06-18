@@ -16,10 +16,15 @@
 
 package org.springframework.samples.petclinic;
 
+import com.zaxxer.hikari.HikariConfig;
+import net.bytebuddy.agent.ByteBuddyAgent;
+import net.bytebuddy.agent.Installer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ImportRuntimeHints;
 
+import java.lang.instrument.Instrumentation;
+import java.lang.reflect.Method;
 import java.util.function.BiConsumer;
 
 /**
@@ -46,6 +51,42 @@ public class PetClinicApplication {
 		System.out.println("micrometer resource attributes = "+micrometerAttributes);
 		System.out.println("otel resource attributes = "+System.getenv("OTEL_RESOURCE_ATTRIBUTES"));
 		SpringApplication.run(PetClinicApplication.class, args);
+
+
+
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+
+				System.out.println("ByteBuddyAgent Installer class loader is "+Installer.class.getClassLoader());
+				System.out.println("HikariConfig class loader is "+ HikariConfig.class.getClassLoader());
+
+
+				Instrumentation instrumentation = null;
+				try {
+					Class<?> installer = Class.forName("net.bytebuddy.agent.Installer", true, ClassLoader.getSystemClassLoader());
+					instrumentation = (Instrumentation) installer.getMethod("getInstrumentation").invoke(null);
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				if (instrumentation != null){
+					System.out.println("got instrumentation from Installer");
+				}else{
+					System.out.println("installing byte buddy agent");
+					instrumentation = ByteBuddyAgent.install();
+					System.out.println("got inst after agent install "+instrumentation);
+				}
+			}
+		}).start();
+
 	}
 
 }
