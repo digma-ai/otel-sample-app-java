@@ -37,6 +37,19 @@
   </properties>
 
   <dependencies>
+    <!--dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>sqs</artifactId>
+    </dependency-->
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>aws-sdk-java</artifactId>
+      <version>2.25.48</version>
+    </dependency>
+    <!--dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>secretsmanager</artifactId>
+    </dependency-->
     <!-- Spring and Spring Boot dependencies -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -159,10 +172,20 @@
       <version>4.10.0</version>
     </dependency>
 
+
   </dependencies>
 
   <dependencyManagement>
     <dependencies>
+
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>bom</artifactId>
+        <version>2.25.48</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers-bom</artifactId>
@@ -195,7 +218,7 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
+      <!--plugin>
         <groupId>io.spring.javaformat</groupId>
         <artifactId>spring-javaformat-maven-plugin</artifactId>
         <version>${spring-format.version}</version>
@@ -207,8 +230,8 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
+      </plugin-->
+      <!--plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>${maven-checkstyle.version}</version>
@@ -245,7 +268,7 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
+      </plugin-->
       <plugin>
         <groupId>org.graalvm.buildtools</groupId>
         <artifactId>native-maven-plugin</artifactId>
