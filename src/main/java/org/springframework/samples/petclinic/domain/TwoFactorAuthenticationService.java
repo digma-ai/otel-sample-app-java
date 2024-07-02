@@ -1,10 +1,8 @@
 package org.springframework.samples.petclinic.domain;
 
-import io.opentelemetry.instrumentation.annotations.WithSpan;
 
 public class TwoFactorAuthenticationService {
 
-	@WithSpan
 	public boolean init2FA(String usr) {
 		try {
 			Thread.sleep(400);

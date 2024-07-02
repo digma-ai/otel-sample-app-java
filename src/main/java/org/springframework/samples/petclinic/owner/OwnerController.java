@@ -18,11 +18,6 @@ package org.springframework.samples.petclinic.owner;
 import java.util.List;
 import java.util.Map;
 
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -56,16 +51,11 @@ class OwnerController implements InitializingBean {
 
 	private OwnerValidation validator;
 
-	@Autowired
-	private OpenTelemetry openTelemetry;
 
-	private Tracer otelTracer;
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		this.otelTracer = openTelemetry.getTracer("OwnerController");
 
-		validator = new OwnerValidation(this.otelTracer);
 	}
 
 	private final OwnerRepository owners;
@@ -142,7 +132,6 @@ class OwnerController implements InitializingBean {
 		return addPaginationModel(page, model, ownersResults);
 	}
 
-	@WithSpan
 	private String addPaginationModel(int page, Model model, Page<Owner> paginated) {
 		// throw new RuntimeException();
 		model.addAttribute("listOwners", paginated);
@@ -154,7 +143,6 @@ class OwnerController implements InitializingBean {
 		return "owners/ownersList";
 	}
 
-	@WithSpan()
 	private Page<Owner> findPaginatedForOwnersLastName(int page, String lastname) {
 		int pageSize = 5;
 		Pageable pageable = PageRequest.of(page - 1, pageSize);

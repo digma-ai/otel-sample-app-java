@@ -1,10 +1,8 @@
 package org.springframework.samples.petclinic.domain;
 
-import io.opentelemetry.instrumentation.annotations.WithSpan;
 
 public class PasswordUtils {
 
-	@WithSpan
 	public boolean vldtPswd(String usr, String pswd) {
 		try {
 			Thread.sleep(30);
@@ -15,7 +13,6 @@ public class PasswordUtils {
 		return true;
 	}
 
-	@WithSpan
 	public String encPswd(String pswd) {
 		try {
 			Thread.sleep(300);

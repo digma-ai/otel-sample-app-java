@@ -1,13 +1,7 @@
 package org.springframework.samples.petclinic.sample;
 
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.StatusCode;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.instrumentation.annotations.WithSpan;
-import io.opentelemetry.instrumentation.api.instrumenter.LocalRootSpan;
 import my.pkg.SqsProvider;
+import my.pkg.SqsProviderVersionOne;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.samples.petclinic.system.AppException;
@@ -29,16 +23,12 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @RequestMapping("/SampleInsights")
 public class SampleInsightsController implements InitializingBean {
 
-	@Autowired
-	private OpenTelemetry openTelemetry;
 
-	private Tracer otelTracer;
 
 	private ExecutorService executorService;
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		this.otelTracer = openTelemetry.getTracer("SampleInsightsController");
 		this.executorService = Executors.newFixedThreadPool(5);
 	}
 
@@ -53,7 +43,12 @@ public class SampleInsightsController implements InitializingBean {
 	// }
 	@GetMapping("sqs")
 	public void sqs() {
-		new SqsProvider().sqsCall();
+		SqsProvider.getInstance().sqsCall();
+	}
+
+	@GetMapping("sqs1")
+	public void sqsone() {
+		 SqsProviderVersionOne.getInstance().sqsCall();
 	}
 
 	// @GetMapping("s3")
@@ -115,12 +110,10 @@ public class SampleInsightsController implements InitializingBean {
 		return "SpanBottleneck";
 	}
 
-	@WithSpan(value = "SpanBottleneck 1")
 	private void doWorkForBottleneck1() {
 		delay(200);
 	}
 
-	@WithSpan(value = "SpanBottleneck 2")
 	private void doWorkForBottleneck2() {
 		delay(50);
 	}
@@ -152,7 +145,6 @@ public class SampleInsightsController implements InitializingBean {
 		method3();
 	}
 
-	@WithSpan
 	private void method3() {
 		throw new RuntimeException("Some unexpected runtime exception");
 	}
@@ -164,42 +156,35 @@ public class SampleInsightsController implements InitializingBean {
 	}
 
 	private void methodThatRecordsError() {
-		Span span = otelTracer.spanBuilder("going-to-record-error").startSpan();
 
 		try {
 			throw new AppException("some message");
 		}
 		catch (AppException e) {
-			span.recordException(e);
-			span.setStatus(StatusCode.ERROR);
+
 		}
 		finally {
-			span.end();
 		}
 	}
 
 	@GetMapping("ErrorRecordedOnCurrentSpan")
 	public String genErrorRecordedOnCurrentSpan() {
-		Span span = Span.current();
 		try {
 			throw new AppException("on current span");
 		}
 		catch (AppException e) {
-			span.recordException(e);
-			span.setStatus(StatusCode.ERROR);
+
 		}
 		return "ErrorRecordedOnCurrentSpan";
 	}
 
 	@GetMapping("ErrorRecordedOnLocalRootSpan")
 	public String genErrorRecordedOnLocalRootSpan() {
-		Span span = LocalRootSpan.current();
 		try {
 			throw new AppException("on local root span");
 		}
 		catch (AppException e) {
-			span.recordException(e);
-			span.setStatus(StatusCode.ERROR);
+
 		}
 		return "ErrorRecordedOnLocalRootSpan";
 	}
@@ -231,7 +216,6 @@ public class SampleInsightsController implements InitializingBean {
 
 	@GetMapping("NPlusOneWithInternalSpan")
 	public String genNPlusOneWithInternalSpan() {
-		Span span = otelTracer.spanBuilder("db_access_01").startSpan();
 
 		try {
 			for (int i = 0; i < 100; i++) {
@@ -239,7 +223,6 @@ public class SampleInsightsController implements InitializingBean {
 			}
 		}
 		finally {
-			span.end();
 		}
 		return "genNPlusOneWithInternalSpan";
 	}
@@ -254,12 +237,10 @@ public class SampleInsightsController implements InitializingBean {
 	}
 
 	private void GenerateSpan(String spanName) {
-		Span span = otelTracer.spanBuilder(spanName).startSpan();
 		try {
 			delay(0);
 		}
 		finally {
-			span.end();
 		}
 	}
 
@@ -286,26 +267,19 @@ public class SampleInsightsController implements InitializingBean {
 		// simulate SpanKind of DB query
 		// see
 		// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md
-		Span span = otelTracer.spanBuilder("query_users_by_id")
-			.setSpanKind(SpanKind.CLIENT)
-			.setAttribute("db.system", "other_sql")
-			.setAttribute("db.statement", "select * from users where id = :id")
-			.startSpan();
+
 
 		try {
 			// delay(1);
 		}
 		finally {
-			span.end();
 		}
 	}
 
-	@WithSpan
 	private void doSomeWorkA(long millis) {
 		delay(millis);
 	}
 
-	@WithSpan
 	private void doSomeWorkB(long millis) {
 		delay(millis);
 	}

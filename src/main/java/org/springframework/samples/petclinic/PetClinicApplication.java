@@ -30,7 +30,7 @@ import java.util.function.BiConsumer;
  */
 @SpringBootApplication
 @ImportRuntimeHints(PetClinicRuntimeHints.class)
-public class PetClinicApplication {
+public class 	PetClinicApplication {
 
 	public static void main(String[] args) {
 		var micrometerAttributes = new StringBuilder("");

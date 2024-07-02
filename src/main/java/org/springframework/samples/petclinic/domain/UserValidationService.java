@@ -1,10 +1,8 @@
 package org.springframework.samples.petclinic.domain;
 
-import io.opentelemetry.instrumentation.annotations.WithSpan;
 
 public class UserValidationService {
 
-	@WithSpan
 	public boolean vldtUsr(String usr) {
 
 		try {

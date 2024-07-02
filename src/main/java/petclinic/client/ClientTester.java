@@ -1,6 +1,5 @@
 package petclinic.client;
 
-import io.opentelemetry.instrumentation.annotations.WithSpan;
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +77,6 @@ public class ClientTester {
 		}));
 	}
 
-	@WithSpan
 	private static void generateInsightData() {
 		MyClient myClient = new MyClient(BASE_APP_SAMPLE_URL);
 
