@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.LockSupport;
 import java.util.stream.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -39,11 +40,7 @@ public class SampleInsightsController implements InitializingBean {
 
 	@GetMapping("/Process/{count}")
 	public String Process(@PathVariable("count") int count){
-		//Random randomLocal = new Random(7);
-		for (int i = 0; i < count; i++) {
-			//int children = randomLocal.nextInt(1, 10);
-			SubProcess(i, 10);
-		}
+		SubProcess(0, count);
 		return "done";
 	}
 
@@ -228,8 +225,16 @@ public class SampleInsightsController implements InitializingBean {
 
 	@GetMapping("GenerateSpans")
 	public String generateSpans(@RequestParam(name = "uniqueSpans") long uniqueSpans) {
-		for (int i = 0; i < uniqueSpans; i++) {
-			GenerateSpan("GeneratedSpan_" + i);
+		for (int i = 0; i < uniqueSpans / 4; i++) {
+			GenerateSpan("Generated" + i + "Span");
+		}
+
+		for (int i = 0; i < uniqueSpans / 4; i++) {
+			GenerateSpan2("Generated" + i + "Span");
+		}
+
+		for (int i = 0; i < uniqueSpans / 4; i++) {
+			GenerateSpan3("Generated" + i + "Span");
 		}
 
 		return "Success";
@@ -238,7 +243,24 @@ public class SampleInsightsController implements InitializingBean {
 	private void GenerateSpan(String spanName){
 		Span span = otelTracer.spanBuilder(spanName).startSpan();
 		try {
-			delay(0);
+		}
+		finally {
+			span.end();
+		}
+	}
+
+	private void GenerateSpan2(String spanName){
+		Span span = otelTracer.spanBuilder(spanName).startSpan();
+		try {
+		}
+		finally {
+			span.end();
+		}
+	}
+
+	private void GenerateSpan3(String spanName){
+		Span span = otelTracer.spanBuilder(spanName).startSpan();
+		try {
 		}
 		finally {
 			span.end();
