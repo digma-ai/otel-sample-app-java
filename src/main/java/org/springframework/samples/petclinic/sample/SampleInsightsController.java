@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+
 
 @RestController
 @RequestMapping("/SampleInsights")
@@ -43,12 +43,19 @@ public class SampleInsightsController implements InitializingBean {
 	// }
 	@GetMapping("sqs")
 	public void sqs() {
-		SqsProvider.getInstance().sqsCall();
+		SqsProvider.test();
+		ForkJoinPool pool = new ForkJoinPool();
+		var task = new SqSTask();
+		pool.invoke(task);
+//		SqsProvider.getInstance().sqsCall();
 	}
+
 
 	@GetMapping("sqs1")
 	public void sqsone() {
-		 SqsProviderVersionOne.getInstance().sqsCall();
+		ForkJoinPool pool = new ForkJoinPool();
+		var task = new SqSTaskTwo();
+		pool.invoke(task);
 	}
 
 	// @GetMapping("s3")

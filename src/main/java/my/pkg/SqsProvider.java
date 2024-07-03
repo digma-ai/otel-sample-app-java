@@ -23,6 +23,11 @@ public class SqsProvider {
 			.build();
 
 	}
+
+	public static void test() {
+
+	}
+
 	public  void sqsCall() {
 
 		 getQueueUrlByName(sqsClient,"shay-test")
