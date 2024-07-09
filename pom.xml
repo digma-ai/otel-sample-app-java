@@ -75,7 +75,6 @@
     <maven-checkstyle.version>3.2.2</maven-checkstyle.version>
     <nohttp-checkstyle.version>0.0.11</nohttp-checkstyle.version>
     <spring-format.version>0.0.39</spring-format.version>
-    <otel.version>1.32.0</otel.version>
 
   </properties>
 
@@ -423,17 +422,9 @@
     </dependency>
 
     <!-- OTEL deps, Enables instrumentation using @WithSpan-->
-    <dependency>
-      <groupId>io.opentelemetry.instrumentation</groupId>
-      <artifactId>opentelemetry-instrumentation-api</artifactId>
-      <version>${otel.version}</version>
-    </dependency>
 
-    <dependency>
-      <groupId>io.opentelemetry.instrumentation</groupId>
-      <artifactId>opentelemetry-instrumentation-annotations</artifactId>
-      <version>${otel.version}</version>
-    </dependency>
+
+
 
     <!-- used for ClientTester -->
     <dependency>
