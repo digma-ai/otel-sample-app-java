@@ -7,6 +7,8 @@ import java.io.FileWriter;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ConcurrentModificationException;
+import java.util.NoSuchElementException;
 
 public class RandomErrorThrower {
 
@@ -71,6 +73,50 @@ public class RandomErrorThrower {
 	static class CustomException20 extends Exception {
 	}
 
+	public static void throwUnexpectedError(int errorType) throws Exception {
+		switch (errorType) {
+			case 0:
+				throw new NullPointerException();
+			case 1:
+				throw new ArrayIndexOutOfBoundsException();
+			case 2:
+				throw new ClassCastException();
+			case 3:
+				throw new IllegalArgumentException();
+			case 4:
+				throw new IllegalStateException();
+			case 5:
+				throw new ArithmeticException();
+			case 6:
+				throw new ConcurrentModificationException();
+			case 7:
+				throw new UnsupportedOperationException();
+			case 8:
+				throw new IndexOutOfBoundsException();
+			case 9:
+				throw new NoSuchElementException();
+			case 10:
+				throw new NumberFormatException();
+			case 11:
+				throw new StackOverflowError();
+			case 12:
+				throw new OutOfMemoryError();
+			case 13:
+				throw new ClassNotFoundException();
+			case 14:
+				throw new IllegalMonitorStateException();
+			case 15:
+				throw new SecurityException();
+			case 16:
+				throw new NoClassDefFoundError();
+			case 17:
+				throw new AssertionError();
+			case 18:
+				throw new TypeNotPresentException("com.example.MyMissingClass", new ClassNotFoundException());
+			default:
+				throw new Exception("Unexpected error type");
+		}
+	}
 
 	public static void throwError(int errorType) throws Exception {
 		switch (errorType) {

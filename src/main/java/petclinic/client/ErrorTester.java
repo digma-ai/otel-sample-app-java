@@ -27,6 +27,13 @@ public class ErrorTester {
 		for (int i = 0; i < 10; i++) {
 			myClient.execute("/error7", false);
 		}
+		myClient.execute("/error8", false);
+
+		myClient.execute("/error9", false);
+
+		myClient.execute("/error10", false);
+		myClient.execute("/error11", false);
+
 		myClient.execute("/run-async", false);
 
 

@@ -40,7 +40,6 @@ public class ErrorsController implements InitializingBean {
 	public void error1() throws IllegalStateException {
 		Utils.throwException(IllegalStateException.class,"some message");
 	}
-
 	//handled exception of type IllegalStateException
 	@GetMapping("error2")
 	public void error2() {
@@ -86,6 +85,25 @@ public class ErrorsController implements InitializingBean {
 				span.end();
 			}
 		}
+	}
+
+	@GetMapping("error8")
+	public void error8() throws IllegalStateException, BadRequestException {
+		errorsService.methodA();
+	}
+
+	@GetMapping("error9")
+	public void error9() {
+		errorsService.methodC();
+	}
+	@GetMapping("error10")
+	public void error10() throws BadRequestException {
+		Utils.ThrowBadRequestException();
+	}
+
+	@GetMapping("error11")
+	public void error11() {
+		errorsService.GenerateMultipleUnexpectedErrors();
 	}
 
 	//ThrowBadRequestException
