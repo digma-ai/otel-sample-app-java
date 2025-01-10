@@ -5,6 +5,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.instrumentation.api.instrumenter.LocalRootSpan;
 import org.springframework.beans.factory.InitializingBean;
@@ -15,9 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.LockSupport;
 import java.util.stream.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -36,7 +39,7 @@ public class SampleInsightsController implements InitializingBean {
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		this.otelTracer = openTelemetry.getTracer("SampleInsightsController");
-		this.executorService = Executors.newFixedThreadPool(5);
+		this.executorService = Executors.newFixedThreadPool(200);
 	}
 
 	@GetMapping("/SpanBottleneck")
@@ -213,6 +216,68 @@ public class SampleInsightsController implements InitializingBean {
 		return resultList;
 	}
 
+	@GetMapping("/ScalingIssueWithoutInflux")
+	public String ScalingIssueWithoutInflux(@RequestParam(name = "uniqueSuffix") String uniqueSuffix) {
+		simulateScalingIssueForLoop("ScalingIssueSpanWithoutInflux" + uniqueSuffix);
+		return "ScalingIssue1";
+	}
+
+	/**
+	 * Second new endpoint that does exactly the same as ScalingIssue1.
+	 */
+	@GetMapping("/ScalingIssueInflux")
+	public String scalingIssue2(@RequestParam(name = "uniqueSuffix") String uniqueSuffix) {
+		simulateScalingIssueForLoop("ScalingIssueSpan" + uniqueSuffix);
+		return "ScalingIssue2";
+	}
+
+
+	private void simulateScalingIssueForLoop(String badScalingSpanName) {
+		// Outer loop from 1 up to 5
+		for (int concurrency = 1; concurrency <= 5; concurrency++) {
+
+			for (int i = 0; i < concurrency; i++) {
+				int finalConcurrency = concurrency;
+				int index = i;
+
+					Span spanParent = otelTracer.spanBuilder("concurrency" + finalConcurrency + "parent" + index).startSpan();
+
+					try (Scope scope = spanParent.makeCurrent()) {
+						Instant starts = Instant.now();
+
+						// Start a span for each task
+						Span span = otelTracer.spanBuilder(badScalingSpanName).startSpan();
+
+						try {
+							// Print concurrency for debugging
+							System.out.println("Concurrency: " + finalConcurrency);
+							busyWaitMillis(finalConcurrency);
+
+						} finally {
+							span.end();
+							Instant ends = Instant.now();
+							System.out.println("Span duration: " + Duration.between(starts, ends));
+						}
+
+					}finally {
+						spanParent.end();
+					}
+			}
+
+			// After concurrency tasks finish, create "AnotherSpan"
+			Span span = otelTracer.spanBuilder("AnotherSpan").startSpan();
+			try {
+				delay(1000); // or LockSupport.parkNanos(1_000_000_000L) if you want the same style
+			} finally {
+				span.end();
+			}
+		}
+	}
+
+
+
+
+
 	private void DbQuery() {
 		// simulate SpanKind of DB query
 		// see
@@ -247,6 +312,14 @@ public class SampleInsightsController implements InitializingBean {
 		}
 		catch (InterruptedException e) {
 			Thread.interrupted();
+		}
+	}
+
+	private void busyWaitMillis(long ms) {
+		long waitNanos = ms * 1_000_000L;
+		long startTime = System.nanoTime();
+		while (System.nanoTime() - startTime < waitNanos) {
+			// Spin: do nothing but burn CPU
 		}
 	}
 
