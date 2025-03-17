@@ -5,16 +5,19 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.instrumentation.api.instrumenter.LocalRootSpan;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.samples.petclinic.system.AppException;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestClientException;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -24,6 +27,8 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.stream.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+
+import org.springframework.web.client.RestTemplate;
 
 @RestController
 @RequestMapping("/SampleInsights")
@@ -35,6 +40,8 @@ public class SampleInsightsController implements InitializingBean {
 	private Tracer otelTracer;
 
 	private ExecutorService executorService;
+
+	private RestTemplate restTemplate = new RestTemplate();
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
@@ -231,6 +238,107 @@ public class SampleInsightsController implements InitializingBean {
 		return "ScalingIssue2";
 	}
 
+	@GetMapping("/ErrorOnHttpClient")
+	public String errorOnHttpClient() {
+		triggerFailingHttpCall();
+
+		return "ErrorOnHttpClient";
+	}
+
+	@GetMapping("/chatty-api")
+	public String ChattyAPI() {
+		callsToHttpClient();
+
+		return "callsToHttpClient";
+	}
+
+
+	@GetMapping("/PerformanceAnomaly")
+	public String performanceAnomaly() {
+		Random random = new Random();
+
+		for (int i = 0; i < 150; i++) {
+			Span span = otelTracer.spanBuilder("SpanWithPerformanceAnomaly").startSpan();
+			try {
+				if (i < 110) {
+					delay(100);
+				} else {
+					delay(1200);
+				}
+			} finally {
+				span.end();
+			}
+		}
+
+		return "PerformanceAnomaly";
+	}
+
+	@GetMapping("/largeTrace")
+	public String getLargeTrace() {
+		// The Spring auto-instrumentation creates the top-level SERVER span for /largeTrace.
+		// We only create a child span for "GetUsersQuery".
+		Span getUsersQuerySpan = otelTracer.spanBuilder("GetUsersQuery").startSpan();
+
+		String repeatedSymbols = IntStream.range(0, 1500)
+			.mapToObj(i -> "A")
+			.collect(Collectors.joining());
+
+		try (Scope scope = getUsersQuerySpan.makeCurrent()) {
+			// Simulate multiple DB queries, each as a CLIENT span.
+			for (int i = 1; i <= 800; i++) {
+				dbQueryLarge(i, repeatedSymbols);
+			}
+		} finally {
+			getUsersQuerySpan.end();
+		}
+
+		return "OK";
+	}
+
+	private void dbQueryLarge(int id, String repeatedSymbols) {
+
+		// This simulates a DB query span (CLIENT).
+		Span dbSpan = otelTracer.spanBuilder("query_users_by_id")
+			.setSpanKind(SpanKind.CLIENT)
+			.setAttribute("db.system", "postgresql")
+			.setAttribute("db.statement", "SELECT * FROM users" + repeatedSymbols +" WHERE id=" + id)
+			.startSpan();
+
+		try (Scope scope = dbSpan.makeCurrent()) {
+			// Simulate ~20ms of work (like DoWork in the C# code).
+			Thread.sleep(20);
+		} catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+		} finally {
+			dbSpan.end();
+		}
+	}
+
+	@Async // Mark the method to run asynchronously
+	public void triggerFailingHttpCall() {
+		try {
+			// Trigger a failing HTTP call
+			restTemplate.getForObject("http://nonexistent-service/fail", String.class);
+		} catch (RestClientException ex) {
+			// Log or handle the exception (optional)
+			System.err.println("HTTP call failed: " + ex.getMessage());
+		}
+	}
+
+	@Async // Mark the method to run asynchronously
+	public void callsToHttpClient() {
+		try {
+			// Trigger a failing HTTP call
+			for (int concurrency = 1; concurrency <= 8; concurrency++) {
+				restTemplate.getForObject("http://google.com", String.class);
+			}
+		} catch (RestClientException ex) {
+			// Log or handle the exception (optional)
+			System.err.println("HTTP call failed: " + ex.getMessage());
+		}
+	}
+
+
 
 	private void simulateScalingIssueForLoop(String badScalingSpanName) {
 		// Outer loop from 1 up to 5
@@ -304,6 +412,55 @@ public class SampleInsightsController implements InitializingBean {
 	@WithSpan
 	private void doSomeWorkB(long millis) {
 		delay(millis);
+	}
+
+	@GetMapping("/bigasynctrace")
+	public String bigAsyncTrace() {
+		for (int i = 0; i < 200; i++) {
+			// 1) Create a parent (sync) span
+			Span parentSpan = otelTracer
+				.spanBuilder("SyncSpan-" + i)
+				.startSpan();
+
+			// 2) Put it in scope so child spans can be properly nested
+			try (Scope scope = parentSpan.makeCurrent()) {
+				// Synchronous work
+				delay(1);
+
+				// 3) Capture the current context (which has the parent span)
+				Context parentContext = Context.current();
+
+				parentSpan.end();
+
+				// 4) Asynchronously create a child span
+				triggerAsyncSpan(i, parentContext);
+
+			}
+		}
+		return "BigAsyncTrace";
+	}
+
+	/**
+	 * Asynchronous child-span creation.
+	 * We re-activate the parent's context inside this method so that
+	 * the child span is a child of the SyncSpan.
+	 */
+	@Async
+	public void triggerAsyncSpan(int i, Context parentContext) {
+		// Re-activate the parent context in this async thread
+		try (Scope scope = parentContext.makeCurrent()) {
+			// 1) Create the child (async) span
+			Span childSpan = otelTracer
+				.spanBuilder("AsyncSpan-" + i)
+				.startSpan();
+			try {
+				// 2) Simulate async work
+				delay(10);
+			} finally {
+				// 3) End the child span
+				childSpan.end();
+			}
+		}
 	}
 
 	private static void delay(long millis) {
