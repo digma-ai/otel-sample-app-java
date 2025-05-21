@@ -1,14 +1,15 @@
-<component name="ProjectRunConfigurationManager">
-	<configuration default="false" name="petcilinic-service" type="Application" factoryName="Application">
-		<option name="ALTERNATIVE_JRE_PATH" value="17" />
+<component name="ProjectRunConfigurationManager">	<component name="ProjectRunConfigurationManager">
+	<configuration default="false" name="petcilinic-service" type="Application" factoryName="Application">		<configuration default="false" name="petcilinic-service" type="Application" factoryName="Application">
+		<option name="ALTERNATIVE_JRE_PATH" value="17" />			<option name="ALTERNATIVE_JRE_PATH" value="17" />
 		<option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
-		<envs>
-			<env name="OTEL_RESOURCE_ATTRIBUTES" value="digma.environment=DEV" />
-		</envs>
-		<option name="MAIN_CLASS_NAME" value="org.springframework.samples.petclinic.PetClinicApplication" />
-		<module name="spring-petclinic.main" />
-		<method v="2">
-			<option name="Make" enabled="true" />
-		</method>
-	</configuration>
+		<option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+		<envs>			<envs>
+			<env name="OTEL_RESOURCE_ATTRIBUTES" value="digma.environment=DEV" />				<env name="OTEL_RESOURCE_ATTRIBUTES" value="digma.environment=DEV" />
+		</envs>			</envs>
+		<option name="MAIN_CLASS_NAME" value="org.springframework.samples.petclinic.PetClinicApplication" />			<option name="MAIN_CLASS_NAME" value="org.springframework.samples.petclinic.PetClinicApplication" />
+		<module name="spring-petclinic.main" />			<module name="spring-petclinic.main" />
+		<method v="2">			<method v="2">
+			<option name="Make" enabled="true" />				<option name="Make" enabled="true" />
+		</method>			</method>
+	</configuration>		</configuration>
 </component>
