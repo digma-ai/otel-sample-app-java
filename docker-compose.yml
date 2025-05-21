@@ -1,5 +1,21 @@
-version: '3'
+version: '3' # This will be ignored by newer Docker Compose versions but kept for compatibility if needed
 services:
+  postgres:
+    image: postgres:15.2
+    container_name: petclinic-postgres
+    ports:
+      - "5442:5432" # Host port 5442 maps to container port 5432
+    environment:
+      POSTGRES_DB: petclinic
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d petclinic"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
     build: ./
@@ -11,6 +27,10 @@ services:
       # Digma entries
       CODE_PACKAGE_PREFIXES: "org.springframework.samples.petclinic"
       DEPLOYMENT_ENV: "SAMPLE_ENV"
+      SPRING_PROFILES_ACTIVE: postgres # Ensure postgres profile is active
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/petclinic # Connect to postgres service on its internal port
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9753/" ]
       interval: 20s
@@ -20,6 +40,9 @@ services:
     ports:
       - "9753:9753"
     entrypoint: java -jar -javaagent:/opentelemetry-javaagent.jar -Dotel.javaagent.extensions=/digma-otel-agent-extension.jar app.jar
+    depends_on:
+      postgres:
+        condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -34,11 +57,18 @@ services:
       # Digma entries
       CODE_PACKAGE_PREFIXES: "org.springframework.samples.petclinic"
       DEPLOYMENT_ENV: "SAMPLE_ENV"
+      SPRING_PROFILES_ACTIVE: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/petclinic
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
     entrypoint: java -cp app.jar -Dloader.main=petclinic.client.ClientTester org.springframework.boot.loader.PropertiesLauncher
-    links:
-      - app
     depends_on:
       app:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres_data:

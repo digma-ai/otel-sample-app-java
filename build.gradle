@@ -39,7 +39,7 @@ dependencies {
   runtimeOnly 'com.github.ben-manes.caffeine:caffeine'
   runtimeOnly 'com.h2database:h2'
   runtimeOnly 'com.mysql:mysql-connector-j'
-  runtimeOnly 'org.postgresql:postgresql'
+  implementation 'org.postgresql:postgresql'
   developmentOnly 'org.springframework.boot:spring-boot-devtools'
   testImplementation 'org.springframework.boot:spring-boot-starter-test'
   testImplementation 'org.springframework.boot:spring-boot-testcontainers'
@@ -53,6 +53,14 @@ dependencies {
 
   // used for ClientTester
   implementation("com.squareup.okhttp3:okhttp:4.10.0")
+
+  // Added Java Faker
+  implementation("com.github.javafaker:javafaker:1.0.2") {
+    exclude group: 'org.yaml', module: 'snakeyaml'
+  }
+
+  // Force a specific version of SnakeYAML to avoid classifier issues
+  implementation "org.yaml:snakeyaml:2.0"
 }
 
 tasks.named('test') {
