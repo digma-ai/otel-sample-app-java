@@ -64,7 +64,7 @@ public class ClinicActivityController implements InitializingBean {
 
     @GetMapping("/query-logs")
     public ResponseEntity<String> getLogs(
-            @RequestParam(name = "repetitions", defaultValue = "1") int repetitions) {
+            @RequestParam(name = "repetitions", defaultValue = "100") int repetitions) {
 
         if (repetitions <= 0) {
             return ResponseEntity.badRequest().body("Repetitions must be a positive integer.");
@@ -113,17 +113,20 @@ public class ClinicActivityController implements InitializingBean {
     }
 
     @GetMapping("/run-simulated-queries")
-    public ResponseEntity<String> runSimulatedQueries() {
+    public ResponseEntity<String> runSimulatedQueries(
+		@RequestParam(name = "uniqueQueriesCount", defaultValue = "3") int uniqueQueriesCount,
+		@RequestParam(name = "repetitions", defaultValue = "100") int repetitions
+	) {
         long startTime = System.currentTimeMillis();
         int totalOperations = 0;
 
-        for (int queryTypeIndex = 0; queryTypeIndex < 10; queryTypeIndex++) {
+        for (int queryTypeIndex = 0; queryTypeIndex < uniqueQueriesCount; queryTypeIndex++) {
             char queryTypeChar = (char) ('A' + queryTypeIndex);
             String parentSpanName = "Batch_Type" + queryTypeChar;
             Span typeParentSpan = otelTracer.spanBuilder(parentSpanName).startSpan();
 
             try (Scope scope = typeParentSpan.makeCurrent()) {
-                for (int execution = 1; execution <= 10; execution++) {
+                for (int execution = 1; execution <= repetitions; execution++) {
                     String operationName = "SimulatedClinicQuery_Type" + queryTypeChar;
                     performObservableOperation(operationName);
                     totalOperations++;
