@@ -1,4 +1,4 @@
-version: '3' # This will be ignored by newer Docker Compose versions but kept for compatibility if needed
+version: '3'
 services:
   postgres:
     image: postgres:15.2
@@ -27,8 +27,8 @@ services:
       # Digma entries
       CODE_PACKAGE_PREFIXES: "org.springframework.samples.petclinic"
       DEPLOYMENT_ENV: "SAMPLE_ENV"
-      SPRING_PROFILES_ACTIVE: postgres # Ensure postgres profile is active
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/petclinic # Connect to postgres service on its internal port
+      SPRING_PROFILES_ACTIVE: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/petclinic
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
     healthcheck:
