@@ -48,7 +48,7 @@ public class ClinicActivityController implements InitializingBean {
     }
 
     @PostMapping("/populate-logs")
-    public ResponseEntity<String> populateData(@RequestParam(name = "count", defaultValue = "2000000") int count) {
+    public ResponseEntity<String> populateData(@RequestParam(name = "count", defaultValue = "6000000") int count) {
         logger.info("Received request to populate {} clinic activity logs.", count);
         if (count <= 0) {
             return ResponseEntity.badRequest().body("Count must be a positive integer.");
@@ -141,6 +141,38 @@ public class ClinicActivityController implements InitializingBean {
         logger.info(message);
         return ResponseEntity.ok(message);
     }
+
+	@PostMapping("/recreate-and-populate-logs")
+	public ResponseEntity<String> recreateAndPopulateLogs(@RequestParam(name = "count", defaultValue = "6000000") int count) {
+		logger.info("Received request to recreate and populate {} clinic activity logs.", count);
+		if (count <= 0) {
+			return ResponseEntity.badRequest().body("Count must be a positive integer.");
+		}
+		try {
+			// Drop the table
+			jdbcTemplate.execute("DROP TABLE IF EXISTS clinic_activity_logs");
+			logger.info("Table 'clinic_activity_logs' dropped successfully.");
+
+			// Recreate the table
+			String createTableSql = "CREATE TABLE clinic_activity_logs (" +
+				"id SERIAL PRIMARY KEY," +
+				"activity_type VARCHAR(255)," +
+				"numeric_value INTEGER," +
+				"event_timestamp TIMESTAMP," +
+				"status_flag BOOLEAN," +
+				"payload TEXT" +
+				")";
+			jdbcTemplate.execute(createTableSql);
+			logger.info("Table 'clinic_activity_logs' created successfully.");
+
+			// Populate data
+			dataService.populateData(count);
+			return ResponseEntity.ok("Successfully recreated and initiated population of " + count + " clinic activity logs.");
+		} catch (Exception e) {
+			logger.error("Error during clinic activity log recreation and population", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during data recreation and population: " + e.getMessage());
+		}
+	}
 
     private void performObservableOperation(String operationName) {
         Span span = otelTracer.spanBuilder(operationName)
