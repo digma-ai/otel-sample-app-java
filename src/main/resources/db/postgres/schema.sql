@@ -53,10 +53,12 @@ CREATE INDEX IF NOT EXISTS visits_pet_id ON visits (pet_id);
 
 -- New table for clinic activity logging
 CREATE TABLE IF NOT EXISTS clinic_activity_logs (
-  id                    SERIAL PRIMARY KEY,
-  activity_type         VARCHAR(255),
-  numeric_value         INTEGER,
+  id                      SERIAL PRIMARY KEY,
+  activity_type          VARCHAR(255),
+  numeric_value          INTEGER,
   event_timestamp       TIMESTAMP,
   status_flag           BOOLEAN,
   payload               TEXT
 );
+-- Add index on numeric_value to improve query performance
+CREATE INDEX IF NOT EXISTS idx_clinic_activity_numeric_value ON clinic_activity_logs (numeric_value);
