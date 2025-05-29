@@ -61,9 +61,14 @@ public class ClinicActivityDataService {
 
     @Transactional
     public int getActiveLogsRatio(String type) {
-		var all = repository.countLogsByType(type);
-		var active = repository.countActiveLogsByType(type);
-		return active/all;
+        var all = repository.countLogsByType(type);
+        var active = repository.countActiveLogsByType(type);
+
+        if (all == 0) {
+            return 0; // Or throw an exception, depending on desired behavior
+        }
+
+        return active/all;
     }
 
     @Transactional
@@ -102,7 +107,7 @@ public class ClinicActivityDataService {
             throw new RuntimeException("Error during data population orchestration: " + e.getMessage(), e);
         } finally {
             if (con != null) {
-                 DataSourceUtils.releaseConnection(con, dataSource);
+                DataSourceUtils.releaseConnection(con, dataSource);
             }
         }
         long endTime = System.currentTimeMillis();
@@ -129,11 +134,11 @@ public class ClinicActivityDataService {
                 boolean statusFlag = faker.bool().bool();
                 String payload = String.join(" ", faker.lorem().paragraphs(faker.number().numberBetween(1, 3)));
 
-                sb.append(csv(activityType)).append(',')
-                  .append(numericVal).append(',')
-                  .append(csv(ts)).append(',')
-                  .append(statusFlag).append(',')
-                  .append(csv(payload)).append('\n');
+                sb.append(csv(activityType)).append(',').
+                        append(numericVal).append(',').
+                        append(csv(ts)).append(',').
+                        append(statusFlag).append(',').
+                        append(csv(payload)).append('\n');
 
                 if ((i + 1) % COPY_FLUSH_EVERY == 0 || (i + 1) == totalEntries) {
                     copyManager.copyIn("COPY clinic_activity_logs (activity_type, numeric_value, event_timestamp, status_flag, payload) FROM STDIN WITH (FORMAT csv)", new java.io.StringReader(sb.toString()));
@@ -170,17 +175,17 @@ public class ClinicActivityDataService {
                     String activityType = ACTIVITY_TYPES.get(random.nextInt(ACTIVITY_TYPES.size()));
                     int numericVal = faker.number().numberBetween(1, 100_000);
                     Timestamp eventTimestamp = Timestamp.from(
-                        faker.date().past(5 * 365, TimeUnit.DAYS).toInstant().atZone(ZoneId.systemDefault()).toInstant()
+                            faker.date().past(5 * 365, TimeUnit.DAYS).toInstant().atZone(ZoneId.systemDefault()).toInstant()
                     );
                     boolean statusFlag = faker.bool().bool();
-                    String payload = String.join(" ", faker.lorem().paragraphs(faker.number().numberBetween(1, 3)));
+                    String payload = String.join(" ", faker.lorem().paragraphs(faker.number().numberBetween(1, 3))));
                     batchArgs.add(new Object[]{activityType, numericVal, eventTimestamp, statusFlag, payload});
                 }
                 if (!batchArgs.isEmpty()) {
                     jdbcTemplate.batchUpdate(sql, batchArgs);
-                     if (logger.isInfoEnabled()) {
+                    if (logger.isInfoEnabled()) {
                         logger.info("JDBC batch inserted {} / {} clinic activity logs...", i, totalEntries);
-                     }
+                    }
                 }
             }
             transactionManager.commit(status);
@@ -198,6 +203,6 @@ public class ClinicActivityDataService {
             return "";
         }
         String escaped = value.replace("\"", "\"\"").replace("\\", "\\\\");
-        return '"' + escaped + '"';
+        return '\'' + escaped + '\'';
     }
 }
