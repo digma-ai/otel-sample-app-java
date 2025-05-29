@@ -1,77 +1,69 @@
 package org.springframework.samples.petclinic.errors;
 
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.StatusCode;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.SmartLifecycle;
-import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.stereotype.Service;
 
-import java.util.InvalidPropertiesFormatException;
+import java.util.concurrent.atomic.AtomicReference;
 
-@Component
-public class MonitorService implements SmartLifecycle {
+@Service
+public class MonitorService {
+    private static final Logger logger = LoggerFactory.getLogger(MonitorService.class);
+    private static final int MAX_RETRIES = 3;
+    private static final long RETRY_DELAY = 1000L;
 
-	private boolean running = false;
-	private Thread backgroundThread;
-	@Autowired
-	private OpenTelemetry openTelemetry;
+    public enum SystemStatus {
+        INITIALIZING,
+        RUNNING,
+        STOPPED,
+        ERROR
+    }
 
-	@Override
-	public void start() {
-		var otelTracer = openTelemetry.getTracer("MonitorService");
+    private final AtomicReference<SystemStatus> status = new AtomicReference<>(SystemStatus.STOPPED);
 
-		running = true;
-		backgroundThread = new Thread(() -> {
-			while (running) {
+    @Retryable(maxAttempts = MAX_RETRIES, backoff = @Backoff(delay = RETRY_DELAY))
+    public void monitor() {
+        try {
+            validateState();
+            // Perform monitoring logic here
+            status.set(SystemStatus.RUNNING);
+        } catch (IllegalStateException e) {
+            handleError("Monitor service failed to start", e);
+            throw e;
+        } catch (Exception e) {
+            handleError("Unexpected error during monitoring", e);
+            throw new RuntimeException("Monitor service encountered an unexpected error", e);
+        }
+    }
 
-				try {
-					Thread.sleep(5000);
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-				Span span = otelTracer.spanBuilder("monitor").startSpan();
+    private void validateState() {
+        SystemStatus currentStatus = status.get();
+        if (currentStatus == SystemStatus.ERROR) {
+            throw new IllegalStateException("Monitor service is in ERROR state");
+        }
+        if (currentStatus == SystemStatus.RUNNING) {
+            throw new IllegalStateException("Monitor service is already running");
+        }
+        status.set(SystemStatus.INITIALIZING);
+    }
 
-				try {
+    private void handleError(String message, Exception e) {
+        logger.error(message, e);
+        status.set(SystemStatus.ERROR);
+    }
 
-					System.out.println("Background service is running...");
-					monitor();
-				} catch (Exception e) {
-					span.recordException(e);
-					span.setStatus(StatusCode.ERROR);
-				} finally {
-					span.end();
-				}
-			}
-		});
+    public boolean isRunning() {
+        return status.get() == SystemStatus.RUNNING;
+    }
 
-		// Start the background thread
-		backgroundThread.start();
-		System.out.println("Background service started.");
-	}
+    public void stop() {
+        status.set(SystemStatus.STOPPED);
+        logger.info("Monitor service stopped");
+    }
 
-	private void monitor() throws InvalidPropertiesFormatException {
-		Utils.throwException(IllegalStateException.class,"monitor failure");
-	}
-
-
-
-	@Override
-	public void stop() {
-		// Stop the background task
-		running = false;
-		if (backgroundThread != null) {
-			try {
-				backgroundThread.join(); // Wait for the thread to finish
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		System.out.println("Background service stopped.");
-	}
-
-	@Override
-	public boolean isRunning() {
-		return false;
-	}
+    public SystemStatus getStatus() {
+        return status.get();
+    }
 }
