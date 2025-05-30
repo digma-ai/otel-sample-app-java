@@ -3,75 +3,117 @@ package org.springframework.samples.petclinic.errors;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
+import java.util.Objects;
 
 @Component
 public class MonitorService implements SmartLifecycle {
 
-	private boolean running = false;
-	private Thread backgroundThread;
-	@Autowired
-	private OpenTelemetry openTelemetry;
+    private static final Logger logger = LoggerFactory.getLogger(MonitorService.class);
+    private boolean running = false;
+    private Thread backgroundThread;
+    @Autowired
+    private OpenTelemetry openTelemetry;
 
-	@Override
-	public void start() {
-		var otelTracer = openTelemetry.getTracer("MonitorService");
+    @Override
+    public void start() {
+        if (isRunning()) {
+            throw new IllegalStateException("Monitor service is already running");
+        }
+        if (openTelemetry == null) {
+            throw new IllegalStateException("OpenTelemetry instance not initialized");
+        }
 
-		running = true;
-		backgroundThread = new Thread(() -> {
-			while (running) {
+        var otelTracer = openTelemetry.getTracer("MonitorService");
+        logger.info("Starting monitor service");
 
-				try {
-					Thread.sleep(5000);
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-				Span span = otelTracer.spanBuilder("monitor").startSpan();
+        try {
+            running = true;
+            backgroundThread = new Thread(() -> {
+                while (running) {
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        logger.warn("Monitor service interrupted during sleep", e);
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
 
-				try {
+                    Span span = otelTracer.spanBuilder("monitor").startSpan();
+                    try {
+                        logger.debug("Executing monitor cycle");
+                        monitor();
+                        logger.info("Background service is running...");
+                    } catch (IllegalStateException e) {
+                        logger.error("Monitor operation failed due to illegal state", e);
+                        span.recordException(e);
+                        span.setStatus(StatusCode.ERROR, "Monitor operation failed: " + e.getMessage());
+                    } catch (Exception e) {
+                        logger.error("Unexpected error during monitoring", e);
+                        span.recordException(e);
+                        span.setStatus(StatusCode.ERROR, "Unexpected monitoring error: " + e.getMessage());
+                    } finally {
+                        span.end();
+                    }
+                }
+            });
 
-					System.out.println("Background service is running...");
-					monitor();
-				} catch (Exception e) {
-					span.recordException(e);
-					span.setStatus(StatusCode.ERROR);
-				} finally {
-					span.end();
-				}
-			}
-		});
+            backgroundThread.start();
+            logger.info("Background service started successfully");
+        } catch (Exception e) {
+            running = false;
+            logger.error("Failed to start monitor service", e);
+            throw new IllegalStateException("Failed to start monitor service", e);
+        }
+    }
 
-		// Start the background thread
-		backgroundThread.start();
-		System.out.println("Background service started.");
-	}
+    private void monitor() throws InvalidPropertiesFormatException {
+        if (!running) {
+            throw new IllegalStateException("Cannot monitor when service is not running");
+        }
+        try {
+            Utils.throwException(IllegalStateException.class, "monitor failure");
+        } catch (IllegalStateException e) {
+            logger.error("Monitor operation failed", e);
+            throw e;
+        }
+    }
 
-	private void monitor() throws InvalidPropertiesFormatException {
-		Utils.throwException(IllegalStateException.class,"monitor failure");
-	}
+    @Override
+    public void stop() {
+        if (!isRunning()) {
+            logger.warn("Attempt to stop non-running monitor service");
+            return;
+        }
 
+        logger.info("Stopping monitor service");
+        try {
+            running = false;
+            if (backgroundThread != null) {
+                try {
+                    backgroundThread.join(5000);
+                    if (backgroundThread.isAlive()) {
+                        logger.warn("Background thread did not terminate gracefully");
+                        backgroundThread.interrupt();
+                    }
+                } catch (InterruptedException e) {
+                    logger.warn("Interrupted while stopping monitor service", e);
+                    Thread.currentThread().interrupt();
+                }
+            }
+            logger.info("Background service stopped successfully");
+        } catch (Exception e) {
+            logger.error("Error while stopping monitor service", e);
+            throw new IllegalStateException("Failed to stop monitor service", e);
+        }
+    }
 
-
-	@Override
-	public void stop() {
-		// Stop the background task
-		running = false;
-		if (backgroundThread != null) {
-			try {
-				backgroundThread.join(); // Wait for the thread to finish
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		System.out.println("Background service stopped.");
-	}
-
-	@Override
-	public boolean isRunning() {
-		return false;
-	}
-}
+    @Override
+    public boolean isRunning() {
+        return running && (backgroun
