@@ -3,75 +3,123 @@ package org.springframework.samples.petclinic.errors;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
-import java.util.InvalidPropertiesFormatException;
-
 @Component
 public class MonitorService implements SmartLifecycle {
 
-	private boolean running = false;
-	private Thread backgroundThread;
-	@Autowired
-	private OpenTelemetry openTelemetry;
+    private static final Logger logger = LoggerFactory.getLogger(MonitorService.class);
+    private static final int MAX_RETRIES = 3;
+    private static final long RETRY_DELAY_MS = 1000;
 
-	@Override
-	public void start() {
-		var otelTracer = openTelemetry.getTracer("MonitorService");
+    private enum State {
+        STOPPED,
+        STARTING,
+        RUNNING,
+        STOPPING
+    }
 
-		running = true;
-		backgroundThread = new Thread(() -> {
-			while (running) {
+    private State currentState = State.STOPPED;
+    private Thread backgroundThread;
+    
+    @Autowired
+    private OpenTelemetry openTelemetry;
 
-				try {
-					Thread.sleep(5000);
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-				Span span = otelTracer.spanBuilder("monitor").startSpan();
+    @Override
+    public void start() {
+        var otelTracer = openTelemetry.getTracer("MonitorService");
+        
+        synchronized(this) {
+            if (currentState != State.STOPPED) {
+                return;
+            }
+            currentState = State.STARTING;
+        }
 
-				try {
+        backgroundThread = new Thread(() -> {
+            currentState = State.RUNNING;
+            while (currentState == State.RUNNING) {
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    logger.warn("Monitor thread interrupted", e);
+                    Thread.currentThread().interrupt();
+                    break;
+                }
 
-					System.out.println("Background service is running...");
-					monitor();
-				} catch (Exception e) {
-					span.recordException(e);
-					span.setStatus(StatusCode.ERROR);
-				} finally {
-					span.end();
-				}
-			}
-		});
+                Span span = otelTracer.spanBuilder("monitor").startSpan();
+                try {
+                    logger.info("Background service is running...");
+                    retryMonitor();
+                } catch (Exception e) {
+                    logger.error("Error in monitor service", e);
+                    span.recordException(e);
+                    span.setStatus(StatusCode.ERROR);
+                } finally {
+                    span.end();
+                }
+            }
+        });
 
-		// Start the background thread
-		backgroundThread.start();
-		System.out.println("Background service started.");
-	}
+        backgroundThread.start();
+        logger.info("Background service started.");
+    }
 
-	private void monitor() throws InvalidPropertiesFormatException {
-		Utils.throwException(IllegalStateException.class,"monitor failure");
-	}
+    private void retryMonitor() {
+        int attempts = 0;
+        while (attempts < MAX_RETRIES) {
+            try {
+                monitor();
+                return;
+            } catch (Exception e) {
+                attempts++;
+                if (attempts == MAX_RETRIES) {
+                    logger.error("Monitor failed after {} retries", MAX_RETRIES, e);
+                    throw e;
+                }
+                logger.warn("Monitor attempt {} failed, retrying...", attempts, e);
+                try {
+                    Thread.sleep(RETRY_DELAY_MS);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Retry interrupted", ie);
+                }
+            }
+        }
+    }
 
+    private void monitor() {
+        logger.debug("Performing monitoring check");
+    }
 
+    @Override
+    public void stop() {
+        synchronized(this) {
+            if (currentState != State.RUNNING) {
+                return;
+            }
+            currentState = State.STOPPING;
+        }
 
-	@Override
-	public void stop() {
-		// Stop the background task
-		running = false;
-		if (backgroundThread != null) {
-			try {
-				backgroundThread.join(); // Wait for the thread to finish
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		System.out.println("Background service stopped.");
-	}
+        if (backgroundThread != null) {
+            try {
+                backgroundThread.join();
+            } catch (InterruptedException e) {
+                logger.warn("Interrupted while stopping monitor service", e);
+                Thread.currentThread().interrupt();
+            }
+        }
+        
+        currentState = State.STOPPED;
+        logger.info("Background service stopped.");
+    }
 
-	@Override
-	public boolean isRunning() {
-		return false;
-	}
+    @Override
+    public boolean isRunning() {
+        return currentState == State.RUNNING;
+    }
 }
