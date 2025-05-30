@@ -48,13 +48,12 @@ public class ClinicActivityController implements InitializingBean {
         this.otelTracer = openTelemetry.getTracer("ClinicActivityController");
     }
 
-	// This ep is here to throw error
-	@GetMapping("active-errors-ratio")
-	public int getActiveErrorsRatio() {
-		return dataService.getActiveLogsRatio("errors");
-	}
+    @GetMapping("active-errors-ratio")
+    public int getActiveErrorsRatio() {
+        return dataService.getActiveLogsRatio("errors");
+    }
 
-	@PostMapping("/populate-logs")
+    @PostMapping("/populate-logs")
     public ResponseEntity<String> populateData(@RequestParam(name = "count", defaultValue = "6000000") int count) {
         logger.info("Received request to populate {} clinic activity logs.", count);
         if (count <= 0) {
@@ -70,134 +69,26 @@ public class ClinicActivityController implements InitializingBean {
     }
 
     @GetMapping("/query-logs")
-    public ResponseEntity<String> getLogs(
-            @RequestParam(name = "repetitions", defaultValue = "100") int repetitions) {
+    public ResponseEntity<Map<String, Object>> getLogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
 
-        if (repetitions <= 0) {
-            return ResponseEntity.badRequest().body("Repetitions must be a positive integer.");
-        }
-
-        int numericValueToTest = 50000;
-        String sql = "SELECT id, activity_type, numeric_value, event_timestamp, status_flag, payload FROM clinic_activity_logs WHERE numeric_value = ?";
-
-        logger.info("Executing direct JDBC query for numeric_value = {}, {} times.", numericValueToTest, repetitions);
-
-        long totalTimeForAllRepetitionsNanos = 0;
-        int rowsFoundLastCall = 0;
-        List<Map<String, Object>> lastResults; // To store results from the last call
-
-        for (int i = 0; i < repetitions; i++) {
-            long startTimeNanos = System.nanoTime();
-            lastResults = jdbcTemplate.queryForList(sql, numericValueToTest);
-            long endTimeNanos = System.nanoTime();
-            totalTimeForAllRepetitionsNanos += (endTimeNanos - startTimeNanos);
-            if (i == repetitions - 1) { // Get row count from the last execution
-                 rowsFoundLastCall = lastResults.size();
-            }
-        }
-
-        long totalDurationMillis = totalTimeForAllRepetitionsNanos / 1_000_000;
-
-        String message = String.format(
-            "Executed JDBC query for numeric_value = %d, %d time(s). Last call found %d rows. Total execution time: %d ms.",
-            numericValueToTest, repetitions, rowsFoundLastCall, totalDurationMillis
-        );
-        logger.info(message);
-
-        return ResponseEntity.ok(message);
-    }
-
-    @DeleteMapping("/cleanup-logs")
-    public ResponseEntity<String> cleanupLogs() {
-        logger.info("Received request to cleanup all clinic activity logs.");
-        try {
-            dataService.cleanupActivityLogs();
-            return ResponseEntity.ok("Successfully cleaned up all clinic activity logs.");
-        } catch (Exception e) {
-            logger.error("Error during clinic activity log cleanup", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during cleanup: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/run-simulated-queries")
-    public ResponseEntity<String> runSimulatedQueries(
-		@RequestParam(name = "uniqueQueriesCount", defaultValue = "3") int uniqueQueriesCount,
-		@RequestParam(name = "repetitions", defaultValue = "100") int repetitions
-	) {
-        long startTime = System.currentTimeMillis();
-        int totalOperations = 0;
-
-        for (int queryTypeIndex = 0; queryTypeIndex < uniqueQueriesCount; queryTypeIndex++) {
-            char queryTypeChar = (char) ('A' + queryTypeIndex);
-            String parentSpanName = "Batch_Type" + queryTypeChar;
-            Span typeParentSpan = otelTracer.spanBuilder(parentSpanName).startSpan();
-
-            try (Scope scope = typeParentSpan.makeCurrent()) {
-                for (int execution = 1; execution <= repetitions; execution++) {
-                    String operationName = "SimulatedClinicQuery_Type" + queryTypeChar;
-                    performObservableOperation(operationName);
-                    totalOperations++;
-                }
-            } finally {
-                typeParentSpan.end();
-            }
-        }
-
-        long endTime = System.currentTimeMillis();
-        String message = String.format("Executed %d simulated clinic query operations in %d ms.", totalOperations, (endTime - startTime));
-        logger.info(message);
-        return ResponseEntity.ok(message);
-    }
-
-	@PostMapping("/recreate-and-populate-logs")
-	public ResponseEntity<String> recreateAndPopulateLogs(@RequestParam(name = "count", defaultValue = "6000000") int count) {
-		logger.info("Received request to recreate and populate {} clinic activity logs.", count);
-		if (count <= 0) {
-			return ResponseEntity.badRequest().body("Count must be a positive integer.");
-		}
-		try {
-			// Drop the table
-			jdbcTemplate.execute("DROP TABLE IF EXISTS clinic_activity_logs");
-			logger.info("Table 'clinic_activity_logs' dropped successfully.");
-
-			// Recreate the table
-			String createTableSql = "CREATE TABLE clinic_activity_logs (" +
-				"id SERIAL PRIMARY KEY," +
-				"activity_type VARCHAR(255)," +
-				"numeric_value INTEGER," +
-				"event_timestamp TIMESTAMP," +
-				"status_flag BOOLEAN," +
-				"payload TEXT" +
-				")";
-			jdbcTemplate.execute(createTableSql);
-			logger.info("Table 'clinic_activity_logs' created successfully.");
-
-			// Populate data
-			dataService.populateData(count);
-			return ResponseEntity.ok("Successfully recreated and initiated population of " + count + " clinic activity logs.");
-		} catch (Exception e) {
-			logger.error("Error during clinic activity log recreation and population", e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during data recreation and population: " + e.getMessage());
-		}
-	}
-
-    private void performObservableOperation(String operationName) {
-        Span span = otelTracer.spanBuilder(operationName)
-            .setSpanKind(SpanKind.CLIENT)
-            .setAttribute("db.system", "postgresql")
-            .setAttribute("db.name", "petclinic")
-            .setAttribute("db.statement", "SELECT * FROM some_table" + operationName)
-            .setAttribute("db.operation", "SELECT")
+        Span span = otelTracer.spanBuilder("query_logs")
+            .setSpanKind(SpanKind.SERVER)
+            .setAttribute("page", page)
+            .setAttribute("size", size)
             .startSpan();
-        try {
-            Thread.sleep(ThreadLocalRandom.current().nextInt(1, 6));
-            logger.debug("Executing simulated operation: {}", operationName);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.error("Simulated operation {} interrupted", operationName, e);
-            span.recordException(e);
-        } finally {
-            span.end();
-        }
-    }
-}
+
+        try (Scope scope = span.makeCurrent()) {
+            int offset = page * size;
+            String countSql = "SELECT COUNT(*) FROM clinic_activity_logs WHERE numeric_value = ?";
+            String sql = "SELECT id, activity_type, numeric_value, event_timestamp, status_flag, payload " +
+                        "FROM clinic_activity_logs WHERE numeric_value = ? " +
+                        "ORDER BY id LIMIT ? OFFSET ?";
+
+            int numericValueToTest = 50000;
+
+            Span countSpan = otelTracer.spanBuilder("count_total_records")
+                .setSpanKind(SpanKind.CLIENT)
+                .setAttribute("db.system", "postgresql")
+                .setAttribute("db.statement",
