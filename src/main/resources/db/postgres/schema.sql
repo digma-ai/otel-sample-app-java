@@ -60,3 +60,4 @@ CREATE TABLE IF NOT EXISTS clinic_activity_logs (
   status_flag           BOOLEAN,
   payload               TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_clinic_activity_logs_numeric_value ON clinic_activity_logs (numeric_value);
