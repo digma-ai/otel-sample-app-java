@@ -7,21 +7,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
+import java.util.InvalidPropertiesFormatException;
+import java.util.concurrent.atomic.AtomicInteger;
+
 @Component
 public class MonitorService implements SmartLifecycle {
 
-    public enum ServiceState {
-        STOPPED,
+    public enum SystemStatus {
         STARTING,
         RUNNING,
         STOPPING,
+        STOPPED,
         ERROR
     }
 
-    private ServiceState currentState = ServiceState.STOPPED;
+    private volatile SystemStatus currentStatus = SystemStatus.STOPPED;
+    private volatile boolean running = false;
     private Thread backgroundThread;
-    private static final int MAX_RETRIES = 3;
-    private static final long RETRY_DELAY_MS = 1000;
+    private final AtomicInteger retryCount = new AtomicInteger(0);
+    private final int MAX_RETRIES = 3;
+    private final long RETRY_DELAY_MS = 1000;
+    private volatile Exception lastError;
 
     @Autowired
     private OpenTelemetry openTelemetry;
@@ -29,26 +35,40 @@ public class MonitorService implements SmartLifecycle {
     @Override
     public void start() {
         var otelTracer = openTelemetry.getTracer("MonitorService");
-        currentState = ServiceState.STARTING;
-        
+        currentStatus = SystemStatus.STARTING;
+        running = true;
+        retryCount.set(0);
+        lastError = null;
+
         backgroundThread = new Thread(() -> {
-            currentState = ServiceState.RUNNING;
-            while (currentState == ServiceState.RUNNING) {
+            while (running) {
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
                 }
-                
+
                 Span span = otelTracer.spanBuilder("monitor").startSpan();
                 try {
-                    System.out.println("Background service is running...");
-                    monitorWithRetry();
+                    currentStatus = SystemStatus.RUNNING;
+                    monitor();
+                    retryCount.set(0);
                 } catch (Exception e) {
+                    lastError = e;
                     span.recordException(e);
                     span.setStatus(StatusCode.ERROR);
-                    currentState = ServiceState.ERROR;
+                    currentStatus = SystemStatus.ERROR;
+
+                    if (retryCount.incrementAndGet() <= MAX_RETRIES) {
+                        try {
+                            Thread.sleep(RETRY_DELAY_MS * retryCount.get());
+                            continue;
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
                 } finally {
                     span.end();
                 }
@@ -59,63 +79,40 @@ public class MonitorService implements SmartLifecycle {
         System.out.println("Background service started.");
     }
 
-    private void monitorWithRetry() {
-        int attempts = 0;
-        Exception lastException = null;
-
-        while (attempts < MAX_RETRIES) {
-            try {
-                monitor();
-                return;
-            } catch (Exception e) {
-                lastException = e;
-                attempts++;
-                
-                if (attempts < MAX_RETRIES) {
-                    try {
-                        Thread.sleep(RETRY_DELAY_MS * attempts);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (lastException != null) {
-            currentState = ServiceState.ERROR;
-            throw new RuntimeException("Monitor failed after " + MAX_RETRIES + " attempts", lastException);
-        }
-    }
-
-    private void monitor() {
+    private void monitor() throws InvalidPropertiesFormatException {
         try {
-            performMonitoring();
+            Utils.throwException(IllegalStateException.class, "monitor failure");
         } catch (Exception e) {
-            throw new RuntimeException("Monitoring operation failed", e);
+            throw new InvalidPropertiesFormatException("Monitor operation failed: " + e.getMessage());
         }
-    }
-
-    private void performMonitoring() {
-        System.out.println("Performing monitoring checks...");
     }
 
     @Override
     public void stop() {
-        currentState = ServiceState.STOPPING;
+        currentStatus = SystemStatus.STOPPING;
+        running = false;
         if (backgroundThread != null) {
+            backgroundThread.interrupt();
             try {
-                backgroundThread.join();
+                backgroundThread.join(5000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
-        currentState = ServiceState.STOPPED;
+        currentStatus = SystemStatus.STOPPED;
         System.out.println("Background service stopped.");
     }
 
     @Override
     public boolean isRunning() {
-        return currentState == ServiceState.RUNNING;
+        return running && currentStatus == SystemStatus.RUNNING;
+    }
+
+    public SystemStatus getCurrentStatus() {
+        return currentStatus;
+    }
+
+    public Exception getLastError() {
+        return lastError;
     }
 }
