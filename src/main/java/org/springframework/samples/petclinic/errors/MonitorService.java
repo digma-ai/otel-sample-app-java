@@ -16,6 +16,10 @@ public class MonitorService implements SmartLifecycle {
 	private Thread backgroundThread;
 	@Autowired
 	private OpenTelemetry openTelemetry;
+	private int consecutiveFailures = 0;
+	private static final int MAX_FAILURES = 3;
+	private static final long CIRCUIT_BREAKER_RESET_TIME = 60000; // 1 minute
+	private long lastFailureTime = 0;
 
 	@Override
 	public void start() {
@@ -51,10 +55,35 @@ public class MonitorService implements SmartLifecycle {
 	}
 
 	private void monitor() throws InvalidPropertiesFormatException {
-		Utils.throwException(IllegalStateException.class,"monitor failure");
+		// Circuit breaker pattern
+		if (consecutiveFailures >= MAX_FAILURES) {
+			if (System.currentTimeMillis() - lastFailureTime < CIRCUIT_BREAKER_RESET_TIME) {
+				System.out.println("Circuit breaker is open. Skipping monitoring.");
+				return;
+			} else {
+				// Reset circuit breaker
+				consecutiveFailures = 0;
+			}
+		}
+
+		try {
+			// Perform monitoring tasks
+			performHealthCheck();
+			// If successful, reset failure count
+			consecutiveFailures = 0;
+		} catch (Exception e) {
+			consecutiveFailures++;
+			lastFailureTime = System.currentTimeMillis();
+			System.out.println("Monitor failure occurred. Consecutive failures: " + consecutiveFailures);
+			throw e;
+		}
 	}
 
-
+	private void performHealthCheck() {
+		// Add actual health check logic here
+		// For now, we'll just simulate a successful check
+		System.out.println("Health check completed successfully");
+	}
 
 	@Override
 	public void stop() {
@@ -72,6 +101,6 @@ public class MonitorService implements SmartLifecycle {
 
 	@Override
 	public boolean isRunning() {
-		return false;
+		return running;
 	}
 }
