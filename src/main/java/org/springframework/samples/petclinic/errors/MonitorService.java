@@ -6,72 +6,108 @@ import io.opentelemetry.api.trace.StatusCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
-
-import java.util.InvalidPropertiesFormatException;
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthIndicator;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
-public class MonitorService implements SmartLifecycle {
+public class MonitorService implements SmartLifecycle, HealthIndicator {
 
-	private boolean running = false;
-	private Thread backgroundThread;
-	@Autowired
-	private OpenTelemetry openTelemetry;
+    private final AtomicBoolean running = new AtomicBoolean(false);
+    private Thread backgroundThread;
+    private final AtomicInteger failureCount = new AtomicInteger(0);
+    private final int FAILURE_THRESHOLD = 3;
+    private final AtomicBoolean circuitOpen = new AtomicBoolean(false);
+    private long lastFailureTime;
+    private final long RESET_TIMEOUT = 60000;
 
-	@Override
-	public void start() {
-		var otelTracer = openTelemetry.getTracer("MonitorService");
+    @Autowired
+    private OpenTelemetry openTelemetry;
 
-		running = true;
-		backgroundThread = new Thread(() -> {
-			while (running) {
+    public class MonitorServiceException extends RuntimeException {
+        public MonitorServiceException(String message) {
+            super(message);
+        }
+        public MonitorServiceException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
 
-				try {
-					Thread.sleep(5000);
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-				Span span = otelTracer.spanBuilder("monitor").startSpan();
+    @Override
+    public void start() {
+        if (running.compareAndSet(false, true)) {
+            var otelTracer = openTelemetry.getTracer("MonitorService");
 
-				try {
+            backgroundThread = new Thread(() -> {
+                while (running.get()) {
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new MonitorServiceException("Monitor service interrupted", e);
+                    }
 
-					System.out.println("Background service is running...");
-					monitor();
-				} catch (Exception e) {
-					span.recordException(e);
-					span.setStatus(StatusCode.ERROR);
-				} finally {
-					span.end();
-				}
-			}
-		});
+                    Span span = otelTracer.spanBuilder("monitor").startSpan();
+                    try {
+                        if (!circuitOpen.get()) {
+                            System.out.println("Background service is running...");
+                            monitor();
+                            failureCount.set(0);
+                        } else if ((System.currentTimeMillis() - lastFailureTime) > RESET_TIMEOUT) {
+                            circuitOpen.set(false);
+                            failureCount.set(0);
+                        }
+                    } catch (Exception e) {
+                        span.recordException(e);
+                        span.setStatus(StatusCode.ERROR);
+                        handleFailure(e);
+                    } finally {
+                        span.end();
+                    }
+                }
+            });
 
-		// Start the background thread
-		backgroundThread.start();
-		System.out.println("Background service started.");
-	}
+            backgroundThread.start();
+            System.out.println("Background service started.");
+        }
+    }
 
-	private void monitor() throws InvalidPropertiesFormatException {
-		Utils.throwException(IllegalStateException.class,"monitor failure");
-	}
+    private void handleFailure(Exception e) {
+        int currentFailures = failureCount.incrementAndGet();
+        if (currentFailures >= FAILURE_THRESHOLD) {
+            circuitOpen.set(true);
+            lastFailureTime = System.currentTimeMillis();
+            throw new MonitorServiceException("Circuit breaker opened due to multiple failures", e);
+        }
+    }
 
+    private void monitor() {
+        if (circuitOpen.get()) {
+            throw new MonitorServiceException("Circuit breaker is open");
+        }
+        try {
+            Utils.throwException(IllegalStateException.class, "monitor failure");
+        } catch (Exception e) {
+            throw new MonitorServiceException("Monitor operation failed", e);
+        }
+    }
 
+    @Override
+    public void stop() {
+        if (running.compareAndSet(true, false)) {
+            if (backgroundThread != null) {
+                try {
+                    backgroundThread.join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new MonitorServiceException("Error stopping monitor service", e);
+                }
+            }
+            System.out.println("Background service stopped.");
+        }
+    }
 
-	@Override
-	public void stop() {
-		// Stop the background task
-		running = false;
-		if (backgroundThread != null) {
-			try {
-				backgroundThread.join(); // Wait for the thread to finish
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		System.out.println("Background service stopped.");
-	}
-
-	@Override
-	public boolean isRunning() {
-		return false;
-	}
-}
+    @Override
+    public boolean isRunning() {
+        return running.get
