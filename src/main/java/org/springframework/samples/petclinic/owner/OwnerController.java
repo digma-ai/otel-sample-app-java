@@ -47,8 +47,7 @@ import jakarta.validation.Valid;
  * @author Arjen Poutsma
  * @author Michael Isvy
  */
-@Controller
-class OwnerController implements InitializingBean {
+@Controllerclass OwnerController implements InitializingBean {
 
 	private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
 
@@ -116,9 +115,7 @@ class OwnerController implements InitializingBean {
 	@GetMapping("/owners/find")
 	public String initFindForm() {
 		return "owners/findOwners";
-	}
-
-	@GetMapping("/owners")
+	}@GetMapping("/owners")
 	public String processFindForm(@RequestParam(defaultValue = "1") int page, Owner owner, BindingResult result,
 			Model model) {
 
@@ -164,15 +161,13 @@ class OwnerController implements InitializingBean {
 		int pageSize = 5;
 		Pageable pageable = PageRequest.of(page - 1, pageSize);
 		return owners.findByLastName(lastname, pageable);
-	}
-
-	@GetMapping("/owners/{ownerId}/edit")
+	}@GetMapping("/owners/{ownerId}/edit")
 	public String initUpdateOwnerForm(@PathVariable("ownerId") int ownerId, Model model) {
 		Owner owner = this.owners.findById(ownerId);
 		var petCount = ownerRepository.countPets(owner.getId());
 		var totalVists = owner.getPets().stream().mapToLong(pet-> pet.getVisits().size())
 			.sum();
-		var averageCisits = totalVists/petCount;
+		var averageVisits = petCount > 0 ? totalVists/petCount : 0;
 		model.addAttribute(owner);
 		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 	}
@@ -226,8 +221,7 @@ class OwnerController implements InitializingBean {
 		String sql = "SELECT p.id AS pet_id, p.owner_id AS owner_id FROM pets p JOIN owners o ON p.owner_id = o.id";
 
 		List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
-
-		Map<Integer, List<Integer>> ownerToPetsMap = rows.stream()
+Map<Integer, List<Integer>> ownerToPetsMap = rows.stream()
 			.collect(Collectors.toMap(
 				row -> (Integer) row.get("owner_id"),
 				row -> List.of((Integer) row.get("pet_id"))  // Immutable list
