@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.samples.petclinic.owner;
-
-import static org.hamcrest.Matchers.empty;
+package org.springframework.samples.petclinic.owner;import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -31,9 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import java.time.LocalDate;
-import java.util.List;
-
-import org.assertj.core.util.Lists;
+import java.util.List;import org.assertj.core.util.Lists;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,8 +50,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * @author Colin But
  */
 @WebMvcTest(OwnerController.class)
-@DisabledInNativeImage
-class OwnerControllerTests {
+@DisabledInNativeImageclass OwnerControllerTests {
 
 	private static final int TEST_OWNER_ID = 1;
 
@@ -91,9 +86,7 @@ class OwnerControllerTests {
 		given(this.owners.findByLastName(eq("Franklin"), any(Pageable.class)))
 			.willReturn(new PageImpl<Owner>(Lists.newArrayList(george)));
 
-		given(this.owners.findAll(any(Pageable.class))).willReturn(new PageImpl<Owner>(Lists.newArrayList(george)));
-
-		given(this.owners.findById(TEST_OWNER_ID)).willReturn(george);
+		given(this.owners.findAll(any(Pageable.class))).willReturn(new PageImpl<Owner>(Lists.newArrayList(george)));given(this.owners.findById(TEST_OWNER_ID)).willReturn(george);
 		Visit visit = new Visit();
 		visit.setDate(LocalDate.now());
 		george.getPet("Max").getVisits().add(visit);
@@ -117,9 +110,7 @@ class OwnerControllerTests {
 				.param("city", "London")
 				.param("telephone", "01316761638"))
 			.andExpect(status().is3xxRedirection());
-	}
-
-	@Test
+	}@Test
 	void testProcessCreationFormHasErrors() throws Exception {
 		mockMvc
 			.perform(post("/owners/new").param("firstName", "Joe").param("lastName", "Bloggs").param("city", "London"))
@@ -136,9 +127,7 @@ class OwnerControllerTests {
 			.andExpect(status().isOk())
 			.andExpect(model().attributeExists("owner"))
 			.andExpect(view().name("owners/findOwners"));
-	}
-
-	@Test
+	}@Test
 	void testProcessFindFormSuccess() throws Exception {
 		Page<Owner> tasks = new PageImpl<Owner>(Lists.newArrayList(george(), new Owner()));
 		Mockito.when(this.owners.findByLastName(anyString(), any(Pageable.class))).thenReturn(tasks);
@@ -152,9 +141,7 @@ class OwnerControllerTests {
 		mockMvc.perform(get("/owners?page=1").param("lastName", "Franklin"))
 			.andExpect(status().is3xxRedirection())
 			.andExpect(view().name("redirect:/owners/" + TEST_OWNER_ID));
-	}
-
-	@Test
+	}@Test
 	void testProcessFindFormNoOwnersFound() throws Exception {
 		Page<Owner> tasks = new PageImpl<Owner>(Lists.newArrayList());
 		Mockito.when(this.owners.findByLastName(eq("Unknown Surname"), any(Pageable.class))).thenReturn(tasks);
@@ -164,9 +151,7 @@ class OwnerControllerTests {
 			.andExpect(model().attributeHasFieldErrorCode("owner", "lastName", "notFound"))
 			.andExpect(view().name("owners/findOwners"));
 
-	}
-
-	@Test
+	}@Test
 	void testInitUpdateOwnerForm() throws Exception {
 		mockMvc.perform(get("/owners/{ownerId}/edit", TEST_OWNER_ID))
 			.andExpect(status().isOk())
@@ -177,9 +162,7 @@ class OwnerControllerTests {
 			.andExpect(model().attribute("owner", hasProperty("city", is("Madison"))))
 			.andExpect(model().attribute("owner", hasProperty("telephone", is("6085551023"))))
 			.andExpect(view().name("owners/createOrUpdateOwnerForm"));
-	}
-
-	@Test
+	}@Test
 	void testProcessUpdateOwnerFormSuccess() throws Exception {
 		mockMvc
 			.perform(post("/owners/{ownerId}/edit", TEST_OWNER_ID).param("firstName", "Joe")
@@ -196,9 +179,7 @@ class OwnerControllerTests {
 		mockMvc.perform(post("/owners/{ownerId}/edit", TEST_OWNER_ID))
 			.andExpect(status().is3xxRedirection())
 			.andExpect(view().name("redirect:/owners/{ownerId}"));
-	}
-
-	@Test
+	}@Test
 	void testProcessUpdateOwnerFormHasErrors() throws Exception {
 		mockMvc
 			.perform(post("/owners/{ownerId}/edit", TEST_OWNER_ID).param("firstName", "Joe")
@@ -210,9 +191,7 @@ class OwnerControllerTests {
 			.andExpect(model().attributeHasFieldErrors("owner", "address"))
 			.andExpect(model().attributeHasFieldErrors("owner", "telephone"))
 			.andExpect(view().name("owners/createOrUpdateOwnerForm"));
-	}
-
-	@Test
+	}@Test
 	void testShowOwner() throws Exception {
 		mockMvc.perform(get("/owners/{ownerId}", TEST_OWNER_ID))
 			.andExpect(status().isOk())
@@ -233,9 +212,7 @@ class OwnerControllerTests {
 						return false;
 					}
 					return true;
-				}
-
-				@Override
+				}@Override
 				public void describeTo(Description description) {
 					description.appendText("Max did not have any visits");
 				}
