@@ -18,9 +18,7 @@ package org.springframework.samples.petclinic.owner;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;import io.opentelemetry.api.OpenTelemetry;
+import java.util.stream.Collectors;import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
@@ -45,12 +43,7 @@ import jakarta.validation.Valid;/**
  * @author Arjen Poutsma
  * @author Michael Isvy
  */
-@Controllerimport org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-class OwnerController implements InitializingBean {
-
-	private static final Logger logger = LoggerFactory.getLogger(OwnerController.class);
+@Controllerclass OwnerController implements InitializingBean {
 
 	private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
 
@@ -160,48 +153,40 @@ class OwnerController implements InitializingBean {
 		int pageSize = 5;
 		Pageable pageable = PageRequest.of(page - 1, pageSize);
 		return owners.findByLastName(lastname, pageable);
-	}import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+	}@GetMapping("/owners/{ownerId}/edit")
+public String initUpdateOwnerForm(@PathVariable("ownerId") int ownerId, Model model) {
+    Owner owner = this.owners.findById(ownerId);
+    long petCount = ownerRepository.countPets(owner.getId());
+    long totalVisits = owner.getPets().stream()
+        .mapToLong(pet -> pet.getVisits().size())
+        .sum();
+    double averageVisits = petCount > 0 ? (double) totalVisits / petCount : 0.0;
+    model.addAttribute("averageVisits", averageVisits);
+    model.addAttribute(owner);
+    return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
+}
 
-@GetMapping("/owners/{ownerId}/edit")
-	private static final Logger logger = LoggerFactory.getLogger(OwnerController.class);
+private static void delay(long millis) {
+    try {
+        Thread.sleep(millis);
+    }
+    catch (InterruptedException e) {
+        Thread.interrupted();
+    }
+}
 
-	public String initUpdateOwnerForm(@PathVariable("ownerId") int ownerId, Model model) {
-		Owner owner = this.owners.findById(ownerId);
-		var petCount = ownerRepository.countPets(owner.getId());
-		try {
-			var totalVisits = owner.getPets() != null ? 
-				owner.getPets().stream().mapToLong(pet -> pet.getVisits().size()).sum() : 0;
-			var averageVisits = petCount > 0 ? totalVisits/petCount : 0;
-			model.addAttribute("averageVisits", averageVisits);
-		} catch (Exception e) {
-			logger.error("Error calculating visit statistics for owner {}: {}", owner.getId(), e.getMessage());
-			model.addAttribute("averageVisits", 0);
-		}
-		model.addAttribute(owner);
-		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
-	}
+@PostMapping("/owners/{ownerId}/edit")
+public String processUpdateOwnerForm(@Valid Owner owner, BindingResult result,
+        @PathVariable("ownerId") int ownerId) {
+    if (result.hasErrors()) {
+        return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
+    }
 
-	private static void delay(long millis) {
-		try {
-			Thread.sleep(millis);
-		}
-		catch (InterruptedException e) {
-			Thread.interrupted();
-		}
-	}
+    owner.setId(ownerId);
+    validator.checkOwnerValidity(owner);
 
-	@PostMapping("/owners/{ownerId}/edit")
-	public String processUpdateOwnerForm(@Valid Owner owner, BindingResult result,
-			@PathVariable("ownerId") int ownerId) {
-		if (result.hasErrors()) {
-			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
-		}
-
-		owner.setId(ownerId);
-		validator.checkOwnerValidity(owner);
-
-		validator.ValidateOwnerWithExternalService(owner);validator.PerformValidationFlow(owner);
+    validator.ValidateOwnerWithExternalService(owner);
+}validator.PerformValidationFlow(owner);
 		this.owners.save(owner);
 		return "redirect:/owners/{ownerId}";
 	}
