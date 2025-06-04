@@ -15,9 +15,7 @@
  */
 package org.springframework.samples.petclinic.owner;
 
-import java.util.List;
-
-import org.springframework.data.domain.Page;
+import java.util.List;import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -34,8 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @author Michael Isvy
- */
-public interface OwnerRepository extends Repository<Owner, Integer> {
+ */public interface OwnerRepository extends Repository<Owner, Integer> {
 
 	/**
 	 * Retrieve all {@link PetType}s from the data store.
@@ -43,6 +40,7 @@ public interface OwnerRepository extends Repository<Owner, Integer> {
 	 */
 	@Query("SELECT ptype FROM PetType ptype ORDER BY ptype.name")
 	@Transactional(readOnly = true)
+	@Cacheable("petTypes")
 	List<PetType> findPetTypes();
 
 	/**
@@ -53,16 +51,14 @@ public interface OwnerRepository extends Repository<Owner, Integer> {
 	 * found)
 	 */
 
-	@Query("SELECT DISTINCT owner FROM Owner owner left join  owner.pets WHERE owner.lastName LIKE :lastName% ")
+	@Query("SELECT DISTINCT owner FROM Owner owner left join fetch owner.pets pets left join fetch pets.visits WHERE owner.lastName LIKE :lastName% ")
 	@Transactional(readOnly = true)
-	Page<Owner> findByLastName(@Param("lastName") String lastName, Pageable pageable);
-
-	/**
+	Page<Owner> findByLastName(@Param("lastName") String lastName, Pageable pageable);/**
 	 * Retrieve an {@link Owner} from the data store by id.
 	 * @param id the id to search for
 	 * @return the {@link Owner} if found
 	 */
-	@Query("SELECT owner FROM Owner owner left join fetch owner.pets WHERE owner.id =:id")
+	@Query("SELECT DISTINCT owner FROM Owner owner left join fetch owner.pets pets left join fetch pets.visits WHERE owner.id =:id")
 	@Transactional(readOnly = true)
 	Owner findById(@Param("id") Integer id);
 
