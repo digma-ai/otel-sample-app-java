@@ -4,9 +4,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
-import org.springframework.samples.petclinic.owner.Owner;
-
-public class OwnerValidation {
+import org.springframework.samples.petclinic.owner.Owner;public class OwnerValidation {
 
 	private int counter = 0;
 
@@ -47,9 +45,7 @@ public class OwnerValidation {
 		boolean vldPswd = pwdUtils.vldtPswd(usr, pswd);
 		if (!vldPswd) {
 			return false;
-		}
-
-		boolean vldUsrRole = roleSvc.vldtUsrRole(usr, sysCode);
+		}boolean vldUsrRole = roleSvc.vldtUsrRole(usr, sysCode);
 		if (!vldUsrRole) {
 			return false;
 		}
@@ -92,42 +88,38 @@ public class OwnerValidation {
 
 	private boolean ValidateOwnerUser(Owner owner) {
 
-		Span span = otelTracer.spanBuilder("db_access_01").startSpan();
+		Span span = otelTracer.spanBuilder("db_access_01").startSpan();try {
+	ValidateOwner();
+}
+finally {
+	span.end();
+}
+return true;
 
-		try {
-			for (int i = 0; i < 100; i++) {
-				ValidateOwner();
-			}
-		}
-		finally {
-			span.end();
-		}
-		return true;
+}
 
+private void ValidateOwner() {
+	// simulate SpanKind of DB query
+	// see
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md
+	Span span = otelTracer.spanBuilder("query_users_by_id")
+		.setSpanKind(SpanKind.CLIENT)
+		.setAttribute("db.system", "other_sql")
+		.setAttribute("db.statement", "select * from users where id = :id")
+		.startSpan();
+
+	try {
+		// delay(1);
 	}
-
-	private void ValidateOwner() {
-		// simulate SpanKind of DB query
-		// see
-		// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md
-		Span span = otelTracer.spanBuilder("query_users_by_id")
-			.setSpanKind(SpanKind.CLIENT)
-			.setAttribute("db.system", "other_sql")
-			.setAttribute("db.statement", "select * from users where id = :id")
-			.startSpan();
-
-		try {
-			// delay(1);
-		}
-		finally {
-			span.end();
-		}
+	finally {
+		span.end();
 	}
+}
 
-	public void PerformValidationFlow(Owner owner) {
-//		if (owner.getPet("Jerry").isNew()) {
-//			ValidateOwner();
-//		}
-	}
+public void PerformValidationFlow(Owner owner) {
+//	if (owner.getPet("Jerry").isNew()) {
+//		ValidateOwner();
+//	}
+}
 
 }
