@@ -9,8 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
 
-@Component
-public class MonitorService implements SmartLifecycle {
+@Componentpublic class MonitorService implements SmartLifecycle {
 
 	private boolean running = false;
 	private Thread backgroundThread;
@@ -48,30 +47,43 @@ public class MonitorService implements SmartLifecycle {
 		// Start the background thread
 		backgroundThread.start();
 		System.out.println("Background service started.");
-	}
+	}private void monitor() {
+    // Check memory usage
+    Runtime runtime = Runtime.getRuntime();
+    long usedMemory = runtime.totalMemory() - runtime.freeMemory();
+    long maxMemory = runtime.maxMemory();
+    double memoryUsagePercent = ((double) usedMemory / maxMemory) * 100;
 
-	private void monitor() throws InvalidPropertiesFormatException {
-		Utils.throwException(IllegalStateException.class,"monitor failure");
-	}
+    // Check thread status
+    ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+    int threadCount = threadBean.getThreadCount();
+    int peakThreadCount = threadBean.getPeakThreadCount();
+    long totalStartedThreadCount = threadBean.getTotalStartedThreadCount();
+
+    // Log system health metrics
+    System.out.println("Memory Usage: " + String.format("%.2f", memoryUsagePercent) + "%");
+    System.out.println("Current Thread Count: " + threadCount);
+    System.out.println("Peak Thread Count: " + peakThreadCount);
+    System.out.println("Total Started Threads: " + totalStartedThreadCount);
+}
 
 
+@Override
+public void stop() {
+    // Stop the background task
+    running = false;
+    if (backgroundThread != null) {
+        try {
+            backgroundThread.join(); // Wait for the thread to finish
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+    System.out.println("Background service stopped.");
+}
 
-	@Override
-	public void stop() {
-		// Stop the background task
-		running = false;
-		if (backgroundThread != null) {
-			try {
-				backgroundThread.join(); // Wait for the thread to finish
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		System.out.println("Background service stopped.");
-	}
-
-	@Override
-	public boolean isRunning() {
-		return false;
-	}
+@Override
+public boolean isRunning() {
+    return false;
+}
 }
