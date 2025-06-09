@@ -9,11 +9,20 @@ import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
 
-@Component
+@Component/**
+ * Monitor service that provides background monitoring capabilities.
+ * Contains demo failure simulation feature that can be enabled via configuration.
+ */
 public class MonitorService implements SmartLifecycle {
+
+	private static final Logger logger = LoggerFactory.getLogger(MonitorService.class);
 
 	private boolean running = false;
 	private Thread backgroundThread;
+
+	@Value("${demo.monitor.failure.enabled:false}")
+	private boolean failureEnabled;
+
 	@Autowired
 	private OpenTelemetry openTelemetry;
 
@@ -33,8 +42,7 @@ public class MonitorService implements SmartLifecycle {
 				Span span = otelTracer.spanBuilder("monitor").startSpan();
 
 				try {
-
-					System.out.println("Background service is running...");
+					logger.info("Background service is running...");
 					monitor();
 				} catch (Exception e) {
 					span.recordException(e);
@@ -47,10 +55,8 @@ public class MonitorService implements SmartLifecycle {
 
 		// Start the background thread
 		backgroundThread.start();
-		System.out.println("Background service started.");
-	}
-
-	private void monitor() throws InvalidPropertiesFormatException {
+		logger.info("Background service started.");
+	}private void monitor() throws InvalidPropertiesFormatException {
 		Utils.throwException(IllegalStateException.class,"monitor failure");
 	}
 
