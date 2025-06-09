@@ -1,0 +1,1 @@
+CREATE INDEX idx_clinic_activity_logs_numeric_value ON clinic_activity_logs(numeric_value);
