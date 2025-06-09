@@ -9,7 +9,17 @@ import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
 
+/**
+ * A service component that demonstrates error handling and monitoring capabilities.
+ * This class implements SmartLifecycle to showcase lifecycle management and
+ * intentionally throws exceptions for demonstration purposes.
+ */
 @Component
+/**
+ * A service that implements SmartLifecycle to provide continuous monitoring functionality.
+ * This service runs in the background and performs periodic monitoring operations
+ * while integrating with OpenTelemetry for observability.
+ */
 public class MonitorService implements SmartLifecycle {
 
 	private boolean running = false;
@@ -48,30 +58,32 @@ public class MonitorService implements SmartLifecycle {
 		// Start the background thread
 		backgroundThread.start();
 		System.out.println("Background service started.");
-	}
+	}/**
+ * Monitors the service state. This method intentionally throws an IllegalStateException
+ * for demonstration purposes to simulate a monitoring failure.
+ * @throws InvalidPropertiesFormatException if properties are invalid
+ */
+private void monitor() throws InvalidPropertiesFormatException {
+	Utils.throwException(IllegalStateException.class,"monitor failure");
+}
 
-	private void monitor() throws InvalidPropertiesFormatException {
-		Utils.throwException(IllegalStateException.class,"monitor failure");
-	}
 
-
-
-	@Override
-	public void stop() {
-		// Stop the background task
-		running = false;
-		if (backgroundThread != null) {
-			try {
-				backgroundThread.join(); // Wait for the thread to finish
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
+@Override
+public void stop() {
+	// Stop the background task
+	running = false;
+	if (backgroundThread != null) {
+		try {
+			backgroundThread.join(); // Wait for the thread to finish
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 		}
-		System.out.println("Background service stopped.");
 	}
+	System.out.println("Background service stopped.");
+}
 
-	@Override
-	public boolean isRunning() {
-		return false;
-	}
+@Override
+public boolean isRunning() {
+	return false;
+}
 }
