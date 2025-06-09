@@ -9,7 +9,11 @@ import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
 
-@Component
+@Component/**
+ * A demonstration service that intentionally monitors and throws exceptions.
+ * This class is used to showcase OpenTelemetry integration and exception handling.
+ * NOT FOR PRODUCTION USE.
+ */
 public class MonitorService implements SmartLifecycle {
 
 	private boolean running = false;
@@ -17,6 +21,11 @@ public class MonitorService implements SmartLifecycle {
 	@Autowired
 	private OpenTelemetry openTelemetry;
 
+	/**
+	 * Starts the monitoring service which runs in a background thread.
+	 * The service intentionally generates monitoring events and exceptions
+	 * for demonstration purposes.
+	 */
 	@Override
 	public void start() {
 		var otelTracer = openTelemetry.getTracer("MonitorService");
@@ -48,9 +57,7 @@ public class MonitorService implements SmartLifecycle {
 		// Start the background thread
 		backgroundThread.start();
 		System.out.println("Background service started.");
-	}
-
-	private void monitor() throws InvalidPropertiesFormatException {
+	}private void monitor() throws InvalidPropertiesFormatException {
 		Utils.throwException(IllegalStateException.class,"monitor failure");
 	}
 
