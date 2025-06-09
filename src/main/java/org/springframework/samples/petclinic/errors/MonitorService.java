@@ -9,8 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
 
-@Component
-public class MonitorService implements SmartLifecycle {
+@Componentpublic class MonitorService implements SmartLifecycle {
 
 	private boolean running = false;
 	private Thread backgroundThread;
@@ -48,12 +47,24 @@ public class MonitorService implements SmartLifecycle {
 		// Start the background thread
 		backgroundThread.start();
 		System.out.println("Background service started.");
-	}
+	}private void monitor() throws InvalidPropertiesFormatException {
+		try {
+			Runtime runtime = Runtime.getRuntime();
+			long totalMemory = runtime.totalMemory();
+			long freeMemory = runtime.freeMemory();
+			long usedMemory = totalMemory - freeMemory;
+			double memoryUsagePercent = ((double) usedMemory / totalMemory) * 100;
 
-	private void monitor() throws InvalidPropertiesFormatException {
-		Utils.throwException(IllegalStateException.class,"monitor failure");
-	}
+			System.out.println("Memory Usage: " + String.format("%.2f", memoryUsagePercent) + "%");
 
+			// Throw exception if memory usage is critically high (e.g., over 90%)
+			if (memoryUsagePercent > 90) {
+				throw new InvalidPropertiesFormatException("Critical memory usage detected: " + String.format("%.2f", memoryUsagePercent) + "%");
+			}
+		} catch (Exception e) {
+			throw new InvalidPropertiesFormatException("Error monitoring system health: " + e.getMessage());
+		}
+	}
 
 
 	@Override
