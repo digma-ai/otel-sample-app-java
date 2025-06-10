@@ -9,8 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
 
-@Component
-public class MonitorService implements SmartLifecycle {
+@Componentpublic class MonitorService implements SmartLifecycle {
 
 	private boolean running = false;
 	private Thread backgroundThread;
@@ -48,30 +47,33 @@ public class MonitorService implements SmartLifecycle {
 		// Start the background thread
 		backgroundThread.start();
 		System.out.println("Background service started.");
-	}
+	}private void monitor() {
+    try {
+        // Add monitoring logic here
+        meterRegistry.counter("background.service.monitor.count").increment();
+        // Add additional monitoring metrics as needed
+    } catch (Exception e) {
+        meterRegistry.counter("background.service.monitor.error").increment();
+        logger.error("Error during monitoring", e);
+    }
+}
 
-	private void monitor() throws InvalidPropertiesFormatException {
-		Utils.throwException(IllegalStateException.class,"monitor failure");
-	}
+@Override
+public void stop() {
+    // Stop the background task
+    running = false;
+    if (backgroundThread != null) {
+        try {
+            backgroundThread.join(); // Wait for the thread to finish
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+    System.out.println("Background service stopped.");
+}
 
-
-
-	@Override
-	public void stop() {
-		// Stop the background task
-		running = false;
-		if (backgroundThread != null) {
-			try {
-				backgroundThread.join(); // Wait for the thread to finish
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		System.out.println("Background service stopped.");
-	}
-
-	@Override
-	public boolean isRunning() {
-		return false;
-	}
+@Override
+public boolean isRunning() {
+    return false;
+}
 }
