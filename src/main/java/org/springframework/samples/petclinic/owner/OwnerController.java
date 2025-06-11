@@ -211,11 +211,13 @@ import jakarta.validation.Valid;/**
 		String sql = "SELECT p.id AS pet_id, p.owner_id AS owner_id FROM pets p JOIN owners o ON p.owner_id = o.id";
 
 		List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);Map<Integer, List<Integer>> ownerToPetsMap = rows.stream()
-			.collect(Collectors.toMap(
+			.collect(Collectors.groupingBy(
 				row -> (Integer) row.get("owner_id"),
-				row -> List.of((Integer) row.get("pet_id"))  // Immutable list
+				Collectors.mapping(
+					row -> (Integer) row.get("pet_id"),
+					Collectors.toList()
+				)
 			));
-
 
 		List<Integer> pets = ownerToPetsMap.get(ownerId);
 
@@ -228,4 +230,3 @@ import jakarta.validation.Valid;/**
 			.collect(Collectors.joining(", "));
 
 	}
-}
