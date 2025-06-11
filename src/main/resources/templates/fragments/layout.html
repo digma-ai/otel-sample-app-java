@@ -17,20 +17,17 @@
     <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
 
-  <link th:href="@{/webjars/font-awesome/4.7.0/css/font-awesome.min.css}" rel="stylesheet">
+  <link th:href="@{/webjars/font-awesome/css/font-awesome.min.css}" rel="stylesheet">
   <link rel="stylesheet" th:href="@{/resources/css/petclinic.css}" />
 
-</head>
-
-<body>
+</head><body>
 
   <nav class="navbar navbar-expand-lg navbar-dark" role="navigation">
     <div class="container-fluid">
       <a class="navbar-brand" th:href="@{/}"><span></span></a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-navbar">
         <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="main-navbar" style>
+      </button><div class="collapse navbar-collapse" id="main-navbar" style>
 
         <ul class="navbar-nav me-auto mb-2 mb-lg-0" th:remove="all">
 
@@ -53,9 +50,7 @@
           <li th:replace="~{::menuItem ('/owners/find','owners','find owners','search','Find owners')}">
             <span class="fa fa-search" aria-hidden="true"></span>
             <span>Find owners</span>
-          </li>
-
-          <li th:replace="~{::menuItem ('/vets.html','vets','veterinarians','th-list','Veterinarians')}">
+          </li><li th:replace="~{::menuItem ('/vets.html','vets','veterinarians','th-list','Veterinarians')}">
             <span class="fa fa-th-list" aria-hidden="true"></span>
             <span>Veterinarians</span>
           </li>
@@ -74,8 +69,7 @@
         </ul>
       </div>
     </div>
-  </nav>
-  <div class="container-fluid">
+  </nav><div class="container-fluid">
     <div class="container xd-container">
 
       <th:block th:insert="${template}" />
@@ -92,7 +86,7 @@
     </div>
   </div>
 
-  <script th:src="@{/webjars/bootstrap/5.2.3/dist/js/bootstrap.bundle.min.js}"></script>
+  <script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}"></script>
 
 </body>
 
