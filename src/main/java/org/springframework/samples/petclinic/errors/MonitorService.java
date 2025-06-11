@@ -9,12 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
 
-@Component/**
- * A monitoring service that simulates error conditions for demonstration purposes.
- * This service intentionally throws IllegalStateException every 5 seconds
- * as part of the application's error simulation functionality.
- */
-public class MonitorService implements SmartLifecycle {
+@Componentpublic class MonitorService implements SmartLifecycle {
 
 	private boolean running = false;
 	private Thread backgroundThread;
@@ -53,33 +48,33 @@ public class MonitorService implements SmartLifecycle {
 		backgroundThread.start();
 		System.out.println("Background service started.");
 	}/**
- * Monitors the system state. This method intentionally throws an IllegalStateException
- * every 5 seconds as part of the application's error simulation functionality.
- * The exception is used for demonstration purposes.
+ * Monitors the system state. This method is intentionally designed to throw an
+ * IllegalStateException as a demonstration feature to simulate monitoring failures.
  *
- * @throws InvalidPropertiesFormatException if there's an invalid property format
+ * @throws InvalidPropertiesFormatException if properties are invalid
+ * @throws IllegalStateException intentionally thrown to demonstrate error handling
  */
 private void monitor() throws InvalidPropertiesFormatException {
-	Utils.throwException(IllegalStateException.class,"monitor failure");
+    Utils.throwException(IllegalStateException.class,"monitor failure");
 }
 
 
 @Override
 public void stop() {
-	// Stop the background task
-	running = false;
-	if (backgroundThread != null) {
-		try {
-			backgroundThread.join(); // Wait for the thread to finish
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
-	}
-	System.out.println("Background service stopped.");
+    // Stop the background task
+    running = false;
+    if (backgroundThread != null) {
+        try {
+            backgroundThread.join(); // Wait for the thread to finish
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+    System.out.println("Background service stopped.");
 }
 
 @Override
 public boolean isRunning() {
-	return false;
+    return false;
 }
 }
