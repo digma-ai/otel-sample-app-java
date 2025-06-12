@@ -9,8 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
 
-@Component
-public class MonitorService implements SmartLifecycle {
+@Componentpublic class MonitorService implements SmartLifecycle {
 
 	private boolean running = false;
 	private Thread backgroundThread;
@@ -48,12 +47,32 @@ public class MonitorService implements SmartLifecycle {
 		// Start the background thread
 		backgroundThread.start();
 		System.out.println("Background service started.");
+	}private void monitor() {
+		// Track memory usage
+		Runtime runtime = Runtime.getRuntime();
+		long usedMemory = runtime.totalMemory() - runtime.freeMemory();
+		long maxMemory = runtime.maxMemory();
+		
+		// Track thread count
+		int threadCount = Thread.activeCount();
+		
+		// Add OpenTelemetry metrics
+		Meter meter = GlobalMeterProvider.get().get("system.metrics");
+		meter.gaugeBuilder("memory.usage")
+			.setDescription("Current memory usage")
+			.setUnit("bytes")
+			.buildWithCallback(result -> result.record(usedMemory));
+		
+		meter.gaugeBuilder("memory.max")
+			.setDescription("Maximum memory available")
+			.setUnit("bytes")
+			.buildWithCallback(result -> result.record(maxMemory));
+		
+		meter.gaugeBuilder("thread.count")
+			.setDescription("Current thread count")
+			.setUnit("threads")
+			.buildWithCallback(result -> result.record(threadCount));
 	}
-
-	private void monitor() throws InvalidPropertiesFormatException {
-		Utils.throwException(IllegalStateException.class,"monitor failure");
-	}
-
 
 
 	@Override
