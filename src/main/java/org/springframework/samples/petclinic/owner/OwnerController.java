@@ -207,33 +207,37 @@ import jakarta.validation.Valid;/**
 
 	@GetMapping("/owners/{ownerId}/pets")
 	@ResponseBody
-	public ResponseEntity<Map<Integer, List<Pet>>> getOwnerPetsMap(@PathVariable("ownerId") int ownerId) {
-		try {
-			String sql = "SELECT p.id AS pet_id, p.name AS pet_name, p.owner_id FROM pets p JOIN owners o ON p.owner_id = o.id";
-			List<Pet> pets = jdbcTemplate.query(sql, (rs, rowNum) -> {
-				Pet pet = new Pet();
-				pet.setId(rs.getInt("pet_id"));
-				pet.setName(rs.getString("pet_name"));
-				pet.setOwnerId(rs.getInt("owner_id"));
-				return pet;
-			});
+	public String getOwnerPetsMap(@PathVariable("ownerId") int ownerId) {
+		String sql = "SELECT p.id AS pet_id, p.owner_id AS owner_id FROM pets p JOIN owners o ON p.owner_id = o.id";
 
-			Map<Integer, List<Pet>> ownerPetsMap = pets.stream()
-				.collect(Collectors.groupingBy(Pet::getOwnerId));
+		List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
 
-			return ResponseEntity.ok(ownerPetsMap);
-		} catch (DataAccessException e) {
-			log.error("Database error while fetching pets: {}", e.getMessage(), e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-		} catch (Exception e) {
-			log.error("Unexpected error while fetching pets: {}", e.getMessage(), e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-		}
-	}Map<Integer, List<Integer>> ownerToPetsMap = rows.stream()
+		Map<Integer, List<Integer>> ownerToPetsMap = rows.stream()
 			.collect(Collectors.groupingBy(
 				row -> (Integer) row.get("owner_id"),
-				Collectors.mapping(row -> (Integer) row.get("pet_id"), Collectors.toList())
+				Collectors.mapping(
+					row -> (Integer) row.get("pet_id"),
+					Collectors.toList()
+				)
 			));
+
+		List<Integer> pets = ownerToPetsMap.get(ownerId);
+
+		if (pets == null || pets.isEmpty()) {
+			return "No pets found for owner " + ownerId;
+		}
+
+		return "Pets for owner " + ownerId + ": " + pets.stream()
+			.map(String::valueOf)
+			.collect(Collectors.joining(", "));
+	}Map<Integer, List<Integer>> ownerToPetsMap = rows.stream()
+		.collect(Collectors.groupingBy(
+			row -> (Integer) row.get("owner_id"),
+			Collectors.mapping(
+				row -> (Integer) row.get("pet_id"),
+				Collectors.toList()
+			)
+		));
 
 		List<Integer> pets = ownerToPetsMap.get(ownerId);
 
@@ -246,3 +250,4 @@ import jakarta.validation.Valid;/**
 			.collect(Collectors.joining(", "));
 
 	}
+}
