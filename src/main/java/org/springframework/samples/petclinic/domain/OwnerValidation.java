@@ -4,9 +4,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
-import org.springframework.samples.petclinic.owner.Owner;
-
-public class OwnerValidation {
+import org.springframework.samples.petclinic.owner.Owner;public class OwnerValidation {
 
 	private int counter = 0;
 
@@ -47,9 +45,7 @@ public class OwnerValidation {
 		boolean vldPswd = pwdUtils.vldtPswd(usr, pswd);
 		if (!vldPswd) {
 			return false;
-		}
-
-		boolean vldUsrRole = roleSvc.vldtUsrRole(usr, sysCode);
+		}boolean vldUsrRole = roleSvc.vldtUsrRole(usr, sysCode);
 		if (!vldUsrRole) {
 			return false;
 		}
@@ -92,9 +88,7 @@ public class OwnerValidation {
 
 	private boolean ValidateOwnerUser(Owner owner) {
 
-		Span span = otelTracer.spanBuilder("db_access_01").startSpan();
-
-		try {
+		Span span = otelTracer.spanBuilder("db_access_01").startSpan();try {
 			for (int i = 0; i < 100; i++) {
 				ValidateOwner();
 			}
@@ -125,9 +119,10 @@ public class OwnerValidation {
 	}
 
 	public void PerformValidationFlow(Owner owner) {
-//		if (owner.getPet("Jerry").isNew()) {
-//			ValidateOwner();
-//		}
+		Pet jerry = owner.getPet("Jerry");
+		if (jerry != null && jerry.isNew()) {
+			ValidateOwner();
+		}
 	}
 
 }
