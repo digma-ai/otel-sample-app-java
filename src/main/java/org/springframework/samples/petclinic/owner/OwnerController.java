@@ -207,15 +207,17 @@ import jakarta.validation.Valid;/**
 
 	@GetMapping("/owners/{ownerId}/pets")
 	@ResponseBody
-	public Map<Long, List<Pet>> getOwnerPetsMap(@PathVariable("ownerId") int ownerId) {
+	public String getOwnerPetsMap(@PathVariable("ownerId") int ownerId) {
 		String sql = "SELECT p.id AS pet_id, p.owner_id AS owner_id FROM pets p JOIN owners o ON p.owner_id = o.id";
 
 		List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);Map<Integer, List<Integer>> ownerToPetsMap = rows.stream()
 			.collect(Collectors.groupingBy(
 				row -> (Integer) row.get("owner_id"),
-				Collectors.mapping(row -> (Integer) row.get("pet_id"), Collectors.toList())
+				Collectors.mapping(
+					row -> (Integer) row.get("pet_id"),
+					Collectors.toList()
+				)
 			));
-
 
 		List<Integer> pets = ownerToPetsMap.get(ownerId);
 
@@ -228,3 +230,4 @@ import jakarta.validation.Valid;/**
 			.collect(Collectors.joining(", "));
 
 	}
+}
