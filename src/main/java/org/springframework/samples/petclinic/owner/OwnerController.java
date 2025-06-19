@@ -159,7 +159,7 @@ import jakarta.validation.Valid;/**
 		var petCount = ownerRepository.countPets(owner.getId());
 		var totalVisits = owner.getPets().stream().mapToLong(pet-> pet.getVisits().size())
 			.sum();
-		var averageVisits = petCount > 0 ? totalVisits / petCount : 0;
+		var averageVisits = petCount > 0 ? totalVisits/petCount : 0;
 		model.addAttribute(owner);
 		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 	}
