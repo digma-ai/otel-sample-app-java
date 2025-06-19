@@ -18,9 +18,7 @@ package org.springframework.samples.petclinic.owner;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
-import io.opentelemetry.api.OpenTelemetry;
+import java.util.stream.Collectors;import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
@@ -39,16 +37,13 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
-import jakarta.validation.Valid;
-
-/**
+import jakarta.validation.Valid;/**
  * @author Juergen Hoeller
  * @author Ken Krebs
  * @author Arjen Poutsma
  * @author Michael Isvy
  */
-@Controller
-class OwnerController implements InitializingBean {
+@Controllerclass OwnerController implements InitializingBean {
 
 	private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
 
@@ -81,9 +76,7 @@ class OwnerController implements InitializingBean {
 	@InitBinder
 	public void setAllowedFields(WebDataBinder dataBinder) {
 		dataBinder.setDisallowedFields("id");
-	}
-
-	@ModelAttribute("owner")
+	}@ModelAttribute("owner")
 	public Owner findOwner(@PathVariable(name = "ownerId", required = false) Integer ownerId) {
 		return ownerId == null ? new Owner() : this.owners.findById(ownerId);
 	}
@@ -111,9 +104,7 @@ class OwnerController implements InitializingBean {
 		this.owners.save(owner);
 		validator.ValidateUserAccess("admin", "pwd", "fullaccess");
 		return "redirect:/owners/" + owner.getId();
-	}
-
-	@GetMapping("/owners/find")
+	}@GetMapping("/owners/find")
 	public String initFindForm() {
 		return "owners/findOwners";
 	}
@@ -141,9 +132,7 @@ class OwnerController implements InitializingBean {
 			// 1 owner found
 			owner = ownersResults.iterator().next();
 			return "redirect:/owners/" + owner.getId();
-		}
-
-		// multiple owners found
+		}// multiple owners found
 		return addPaginationModel(page, model, ownersResults);
 	}
 
@@ -164,15 +153,23 @@ class OwnerController implements InitializingBean {
 		int pageSize = 5;
 		Pageable pageable = PageRequest.of(page - 1, pageSize);
 		return owners.findByLastName(lastname, pageable);
-	}
-
-	@GetMapping("/owners/{ownerId}/edit")
+	}@GetMapping("/owners/{ownerId}/edit")
 	public String initUpdateOwnerForm(@PathVariable("ownerId") int ownerId, Model model) {
 		Owner owner = this.owners.findById(ownerId);
-		var petCount = ownerRepository.countPets(owner.getId());
-		var totalVists = owner.getPets().stream().mapToLong(pet-> pet.getVisits().size())
-			.sum();
-		var averageCisits = totalVists/petCount;
+		int petCount = ownerRepository.countPets(owner.getId());
+		int totalVisits = 0;
+		
+		if (owner.getPets() != null) {
+			totalVisits = owner.getPets().stream()
+				.mapToLong(pet -> pet.getVisits().size())
+				.sum();
+		}
+		
+		int averageVisits = 0;
+		if (petCount > 0) {
+			averageVisits = totalVisits / petCount;
+		}
+		
 		model.addAttribute(owner);
 		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 	}
@@ -197,8 +194,7 @@ class OwnerController implements InitializingBean {
 		validator.checkOwnerValidity(owner);
 
 		validator.ValidateOwnerWithExternalService(owner);
-
-		validator.PerformValidationFlow(owner);
+	}validator.PerformValidationFlow(owner);
 		this.owners.save(owner);
 		return "redirect:/owners/{ownerId}";
 	}
@@ -225,9 +221,7 @@ class OwnerController implements InitializingBean {
 	public String getOwnerPetsMap(@PathVariable("ownerId") int ownerId) {
 		String sql = "SELECT p.id AS pet_id, p.owner_id AS owner_id FROM pets p JOIN owners o ON p.owner_id = o.id";
 
-		List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
-
-		Map<Integer, List<Integer>> ownerToPetsMap = rows.stream()
+		List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);Map<Integer, List<Integer>> ownerToPetsMap = rows.stream()
 			.collect(Collectors.toMap(
 				row -> (Integer) row.get("owner_id"),
 				row -> List.of((Integer) row.get("pet_id"))  // Immutable list
