@@ -9,7 +9,15 @@ import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
 
+/**
+ * Test service class that simulates error scenarios for monitoring and observability testing.
+ * This component is used to generate controlled error conditions in a test environment.
+ */
 @Component
+/**
+ * Test service class that simulates monitoring functionality.
+ * This class is intended for testing and demonstration purposes only.
+ */
 public class MonitorService implements SmartLifecycle {
 
 	private boolean running = false;
@@ -48,30 +56,34 @@ public class MonitorService implements SmartLifecycle {
 		// Start the background thread
 		backgroundThread.start();
 		System.out.println("Background service started.");
-	}
+	}/**
+ * Test method that simulates a monitoring failure scenario.
+ * This method is intended to always throw an exception for testing purposes.
+ *
+ * @throws InvalidPropertiesFormatException when monitor simulation fails
+ */
+private void monitor() throws InvalidPropertiesFormatException {
+    // Intentionally throw exception to simulate monitoring failure
+    Utils.throwException(IllegalStateException.class,"monitor failure");
+}
 
-	private void monitor() throws InvalidPropertiesFormatException {
-		Utils.throwException(IllegalStateException.class,"monitor failure");
-	}
 
+@Override
+public void stop() {
+    // Stop the background task
+    running = false;
+    if (backgroundThread != null) {
+        try {
+            backgroundThread.join(); // Wait for the thread to finish
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+    System.out.println("Background service stopped.");
+}
 
-
-	@Override
-	public void stop() {
-		// Stop the background task
-		running = false;
-		if (backgroundThread != null) {
-			try {
-				backgroundThread.join(); // Wait for the thread to finish
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		System.out.println("Background service stopped.");
-	}
-
-	@Override
-	public boolean isRunning() {
-		return false;
-	}
+@Override
+public boolean isRunning() {
+    return false;
+}
 }
