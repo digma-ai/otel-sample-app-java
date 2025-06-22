@@ -9,8 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
 
-@Component
-public class MonitorService implements SmartLifecycle {
+@Componentpublic class MonitorService implements SmartLifecycle {
 
 	private boolean running = false;
 	private Thread backgroundThread;
@@ -48,13 +47,31 @@ public class MonitorService implements SmartLifecycle {
 		// Start the background thread
 		backgroundThread.start();
 		System.out.println("Background service started.");
+	}private void monitor() {
+		try {
+			// Check CPU usage
+			double cpuLoad = ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
+			
+			// Check memory usage
+			Runtime runtime = Runtime.getRuntime();
+			long usedMemory = runtime.totalMemory() - runtime.freeMemory();
+			long maxMemory = runtime.maxMemory();
+			double memoryUsage = ((double) usedMemory / maxMemory) * 100;
+			
+			// Log system health metrics
+			Logger.getLogger(getClass().getName()).info(
+				String.format("System Health - CPU Load: %.2f%%, Memory Usage: %.2f%%", 
+				cpuLoad * 100, memoryUsage));
+			
+			// Alert if metrics exceed thresholds
+			if (cpuLoad > 0.8 || memoryUsage > 90) {
+				Logger.getLogger(getClass().getName()).warning(
+					"System resources critically high - CPU: " + cpuLoad + ", Memory: " + memoryUsage + "%");
+			}
+		} catch (Exception e) {
+			Logger.getLogger(getClass().getName()).severe("Error monitoring system health: " + e.getMessage());
+		}
 	}
-
-	private void monitor() throws InvalidPropertiesFormatException {
-		Utils.throwException(IllegalStateException.class,"monitor failure");
-	}
-
-
 
 	@Override
 	public void stop() {
