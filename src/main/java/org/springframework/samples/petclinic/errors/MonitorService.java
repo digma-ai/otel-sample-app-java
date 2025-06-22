@@ -48,45 +48,39 @@ import java.util.InvalidPropertiesFormatException;
 		backgroundThread.start();
 		System.out.println("Background service started.");
 	}private void monitor() {
-    try {
-        // System health checks
-        long totalMemory = Runtime.getRuntime().totalMemory();
-        long freeMemory = Runtime.getRuntime().freeMemory();
-        long usedMemory = totalMemory - freeMemory;
-        
-        // CPU usage check
-        double cpuLoad = ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
-        
-        // Log system metrics
-        Logger.getLogger(getClass().getName()).info(
-            String.format("Health Check - Memory Usage: %d MB, CPU Load: %.2f", 
-                usedMemory / (1024 * 1024), 
-                cpuLoad));
-                
-        // Additional checks can be added here
-        
-    } catch (Exception e) {
-        Logger.getLogger(getClass().getName()).severe(
-            "Error during system monitoring: " + e.getMessage());
-    }
-}
+		try {
+			// Check CPU usage
+			double cpuUsage = SystemMetrics.getCPUUsage();
+			// Check memory usage
+			double memoryUsage = SystemMetrics.getMemoryUsage();
+			
+			Logger.info("System Health Check - CPU Usage: {}%, Memory Usage: {}%", cpuUsage, memoryUsage);
+			
+			if (cpuUsage > 90 || memoryUsage > 90) {
+				Logger.warn("System resources critically high - CPU: {}%, Memory: {}%", cpuUsage, memoryUsage);
+			}
+		} catch (Exception e) {
+			Logger.error("Error during system monitoring: {}", e.getMessage(), e);
+		}
+	}
 
-@Override
-public void stop() {
-    // Stop the background task
-    running = false;
-    if (backgroundThread != null) {
-        try {
-            backgroundThread.join(); // Wait for the thread to finish
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-    System.out.println("Background service stopped.");
-}
 
-@Override
-public boolean isRunning() {
-    return false;
-}
+	@Override
+	public void stop() {
+		// Stop the background task
+		running = false;
+		if (backgroundThread != null) {
+			try {
+				backgroundThread.join(); // Wait for the thread to finish
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
+		System.out.println("Background service stopped.");
+	}
+
+	@Override
+	public boolean isRunning() {
+		return false;
+	}
 }
