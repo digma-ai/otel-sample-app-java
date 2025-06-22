@@ -9,50 +9,70 @@ import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
 
-@Componentpublic class MonitorService implements SmartLifecycle {
+@Component/**
+ * Monitor service that performs periodic system monitoring.
+ * Implements SmartLifecycle for proper Spring lifecycle management.
+ */
+public class MonitorService implements SmartLifecycle {
 
-	private boolean running = false;
-	private Thread backgroundThread;
-	@Autowired
-	private OpenTelemetry openTelemetry;
+    private boolean running = false;
+    private Thread backgroundThread;
+    @Autowired
+    private OpenTelemetry openTelemetry;
 
-	@Override
-	public void start() {
-		var otelTracer = openTelemetry.getTracer("MonitorService");
+    @Override
+    public void start() {
+        var otelTracer = openTelemetry.getTracer("MonitorService");
 
-		running = true;
-		backgroundThread = new Thread(() -> {
-			while (running) {
+        running = true;
+        backgroundThread = new Thread(() -> {
+            while (running) {
+                try {
+                    Thread.sleep(30000); // 30 second interval
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    running = false;
+                    break;
+                }
+                
+                Span span = otelTracer.spanBuilder("monitor").startSpan();
+                try {
+                    System.out.println("Background service is running...");
+                    monitor();
+                } catch (Exception e) {
+                    span.recordException(e);
+                    span.setStatus(StatusCode.ERROR);
+                    // Log the error for better visibility
+                    System.err.println("Error in monitoring service: " + e.getMessage());
+                } finally {
+                    span.end();
+                }
+            }
+        }, "MonitorService-Thread");
 
-				try {
-					Thread.sleep(5000);
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-				Span span = otelTracer.spanBuilder("monitor").startSpan();
+        // Start the background thread
+        backgroundThread.start();
+        System.out.println("Background service started.");
+    }
+private void monitor() throws MonitoringException {
+		try {
+			// Collect actual monitoring metrics
+			Map<String, Double> metrics = new HashMap<>();
+			metrics.put("cpu_usage", getCpuUsage());
+			metrics.put("memory_usage", getMemoryUsage());
+			metrics.put("disk_usage", getDiskUsage());
 
-				try {
+			// Log metrics
+			logMetrics(metrics);
 
-					System.out.println("Background service is running...");
-					monitor();
-				} catch (Exception e) {
-					span.recordException(e);
-					span.setStatus(StatusCode.ERROR);
-				} finally {
-					span.end();
-				}
+			// Simulate errors if configured
+			if (configuration.isErrorSimulationEnabled()) {
+				Utils.throwException(IllegalStateException.class, "Simulated monitor failure");
 			}
-		});
-
-		// Start the background thread
-		backgroundThread.start();
-		System.out.println("Background service started.");
-	}private void monitor() throws InvalidPropertiesFormatException {
-		if (configuration.isErrorSimulationEnabled()) {
-			Utils.throwException(IllegalStateException.class, "monitor failure (simulated)");
+		} catch (Exception e) {
+			throw new MonitoringException("Failed to collect monitoring metrics", e);
 		}
 	}
-
 
 	@Override
 	public void stop() {
@@ -63,13 +83,14 @@ import java.util.InvalidPropertiesFormatException;
 				backgroundThread.join(); // Wait for the thread to finish
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
+				logger.error("Interrupted while stopping monitoring service", e);
 			}
 		}
-		System.out.println("Background service stopped.");
+		logger.info("Background service stopped.");
 	}
 
 	@Override
 	public boolean isRunning() {
-		return false;
+		return running;
 	}
 }
