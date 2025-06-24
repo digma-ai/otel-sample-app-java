@@ -18,13 +18,23 @@ package org.springframework.samples.petclinic.system;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.CacheControl;
+import java.util.concurrent.TimeUnit;
 
 @Controller
 class WelcomeController {
 
-	@GetMapping("/")
-	public String welcome() {
-		return "welcome";
-	}
+    private static final String WELCOME_VIEW = "welcome";
+    private static final long CACHE_DURATION = 3600; // 1 hour in seconds
+
+    @GetMapping("/")
+    @Cacheable(value = "welcomePageCache", key = "'welcomePage'")
+    public ResponseEntity<String> welcome() {
+        return ResponseEntity.ok()
+            .cacheControl(CacheControl.maxAge(CACHE_DURATION, TimeUnit.SECONDS))
+            .body(WELCOME_VIEW);
+    }
 
 }
