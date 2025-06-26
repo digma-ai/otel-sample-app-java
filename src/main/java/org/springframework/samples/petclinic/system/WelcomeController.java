@@ -16,15 +16,26 @@
 
 package org.springframework.samples.petclinic.system;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 class WelcomeController {
 
-	@GetMapping("/")
-	public String welcome() {
-		return "welcome";
-	}
+    private static final Logger logger = LoggerFactory.getLogger(WelcomeController.class);
+
+    @GetMapping("/")
+    public String welcome() {
+        try {
+            logger.info("Processing welcome page request");
+            return "welcome";
+        } catch (Exception e) {
+            logger.error("Error processing welcome page request", e);
+            return "error";
+        }
+    }
 
 }
