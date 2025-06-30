@@ -9,6 +9,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
 
+/**
+ * A demo service that intentionally throws exceptions to showcase error handling and monitoring capabilities.
+ * This service is part of the demo features and should not be used in production.
+ */
 @Component
 public class MonitorService implements SmartLifecycle {
 
@@ -33,7 +37,6 @@ public class MonitorService implements SmartLifecycle {
 				Span span = otelTracer.spanBuilder("monitor").startSpan();
 
 				try {
-
 					System.out.println("Background service is running...");
 					monitor();
 				} catch (Exception e) {
@@ -50,10 +53,16 @@ public class MonitorService implements SmartLifecycle {
 		System.out.println("Background service started.");
 	}
 
+	/**
+	 * Demo method that intentionally throws an IllegalStateException.
+	 * This is used to demonstrate error handling and monitoring capabilities.
+	 * DO NOT USE IN PRODUCTION.
+	 *
+	 * @throws InvalidPropertiesFormatException This exception is part of the demo
+	 */
 	private void monitor() throws InvalidPropertiesFormatException {
 		Utils.throwException(IllegalStateException.class,"monitor failure");
 	}
-
 
 
 	@Override
