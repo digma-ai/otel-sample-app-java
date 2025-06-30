@@ -9,6 +9,17 @@ import org.springframework.stereotype.Component;
 
 import java.util.InvalidPropertiesFormatException;
 
+/**
+ * Monitor Service that intentionally throws exceptions for demonstration purposes.
+ * This service is designed to showcase error handling and monitoring capabilities
+ * in a demo environment. The exceptions thrown here are EXPECTED and are part of
+ * the demonstration - they should not be treated as actual errors.
+ *
+ * The service throws an exception every 5 seconds (configurable) to demonstrate:
+ * 1. Error handling patterns
+ * 2. OpenTelemetry integration
+ * 3. Monitoring and observability features
+ */
 @Component
 public class MonitorService implements SmartLifecycle {
 
@@ -26,6 +37,7 @@ public class MonitorService implements SmartLifecycle {
 			while (running) {
 
 				try {
+					// Demo exception frequency - throws every 5 seconds
 					Thread.sleep(5000);
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
@@ -33,7 +45,6 @@ public class MonitorService implements SmartLifecycle {
 				Span span = otelTracer.spanBuilder("monitor").startSpan();
 
 				try {
-
 					System.out.println("Background service is running...");
 					monitor();
 				} catch (Exception e) {
@@ -50,10 +61,15 @@ public class MonitorService implements SmartLifecycle {
 		System.out.println("Background service started.");
 	}
 
+	/**
+	 * Intentionally throws an exception for demonstration purposes.
+	 * This is an expected behavior used to showcase error handling.
+	 * 
+	 * @throws InvalidPropertiesFormatException Demo exception
+	 */
 	private void monitor() throws InvalidPropertiesFormatException {
-		Utils.throwException(IllegalStateException.class,"monitor failure");
+		Utils.throwException(IllegalStateException.class, "monitor failure - Demo Exception");
 	}
-
 
 
 	@Override
