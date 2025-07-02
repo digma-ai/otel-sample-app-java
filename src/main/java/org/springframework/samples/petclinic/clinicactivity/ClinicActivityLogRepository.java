@@ -12,10 +12,13 @@ import java.util.List;
 @Repository
 public interface ClinicActivityLogRepository extends JpaRepository<ClinicActivityLog, Integer> {
 
-    @Query("SELECT cal FROM ClinicActivityLog cal WHERE cal.activityType = :activityType " +
+    @Query("SELECT cal.id, cal.activityType, cal.numericValue, cal.eventTimestamp, cal.statusFlag " +
+           "FROM ClinicActivityLog cal " +
+           "WHERE cal.activityType = :activityType " +
            "AND cal.numericValue >= :minNumericValue AND cal.numericValue <= :maxNumericValue " +
            "AND cal.eventTimestamp >= :startDate AND cal.eventTimestamp < :endDate " +
-           "AND cal.statusFlag = :statusFlag")
+           "AND cal.statusFlag = :statusFlag " +
+           "ORDER BY cal.eventTimestamp DESC")
     List<ClinicActivityLog> findByComplexCriteria(
         @Param("activityType") String activityType,
         @Param("minNumericValue") Integer minNumericValue,
@@ -25,7 +28,7 @@ public interface ClinicActivityLogRepository extends JpaRepository<ClinicActivit
         @Param("statusFlag") Boolean statusFlag
     );
 
-    @Query("SELECT COUNT(1) FROM ClinicActivityLog cal WHERE cal.activityType = :activityType ")
+    @Query("SELECT COUNT(1) FROM ClinicActivityLog cal WHERE cal.activityType = :activityType")
     int countLogsByType(
         @Param("activityType") String activityType);
 
