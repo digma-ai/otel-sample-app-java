@@ -7,112 +7,73 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
-import java.util.InvalidPropertiesFormatException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
 
-@Component
-public class MonitorService implements SmartLifecycle {
+@Componentpublic class MonitorService implements SmartLifecycle {
 
-    public enum SystemStatus {
-        STARTING,
-        RUNNING,
-        STOPPING,
-        STOPPED,
-        ERROR
-    }
-
-    private volatile SystemStatus currentStatus = SystemStatus.STOPPED;
-    private volatile boolean running = false;
+    private static final Logger logger = Logger.getLogger(MonitorService.class.getName());
+    private final AtomicBoolean running = new AtomicBoolean(false);
     private Thread backgroundThread;
-    private final AtomicInteger retryCount = new AtomicInteger(0);
-    private final int MAX_RETRIES = 3;
-    private final long RETRY_DELAY_MS = 1000;
-    private volatile Exception lastError;
-
+    
     @Autowired
     private OpenTelemetry openTelemetry;
 
     @Override
-    public void start() {
-        var otelTracer = openTelemetry.getTracer("MonitorService");
-        currentStatus = SystemStatus.STARTING;
-        running = true;
-        retryCount.set(0);
-        lastError = null;
+    public synchronized void start() {
+        if (isRunning()) {
+            return;
+        }
 
+        var otelTracer = openTelemetry.getTracer("MonitorService");
+        running.set(true);
+        
         backgroundThread = new Thread(() -> {
-            while (running) {
+            while (running.get()) {
                 try {
                     Thread.sleep(5000);
+                    Span span = otelTracer.spanBuilder("monitor").startSpan();
+
+                    try {
+                        logger.info("Background service is running...");
+                        performMonitoring();
+                    } catch (Exception e) {
+                        span.recordException(e);
+                        span.setStatus(StatusCode.ERROR);
+                        logger.warning("Monitor service encountered an error: " + e.getMessage());
+                    } finally {
+                        span.end();
+                    }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
                 }
-
-                Span span = otelTracer.spanBuilder("monitor").startSpan();
-                try {
-                    currentStatus = SystemStatus.RUNNING;
-                    monitor();
-                    retryCount.set(0);
-                } catch (Exception e) {
-                    lastError = e;
-                    span.recordException(e);
-                    span.setStatus(StatusCode.ERROR);
-                    currentStatus = SystemStatus.ERROR;
-
-                    if (retryCount.incrementAndGet() <= MAX_RETRIES) {
-                        try {
-                            Thread.sleep(RETRY_DELAY_MS * retryCount.get());
-                            continue;
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
-                            break;
-                        }
-                    }
-                } finally {
-                    span.end();
-                }
             }
         });
 
+        backgroundThread.setName("MonitorService-Thread");
         backgroundThread.start();
-        System.out.println("Background service started.");
+        logger.info("Background service started.");
+    }@Override
+public synchronized void stop() {
+    if (!isRunning()) {
+        return;
     }
 
-    private void monitor() throws InvalidPropertiesFormatException {
+    running.set(false);
+    if (backgroundThread != null) {
         try {
-            Utils.throwException(IllegalStateException.class, "monitor failure");
-        } catch (Exception e) {
-            throw new InvalidPropertiesFormatException("Monitor operation failed: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public void stop() {
-        currentStatus = SystemStatus.STOPPING;
-        running = false;
-        if (backgroundThread != null) {
             backgroundThread.interrupt();
-            try {
-                backgroundThread.join(5000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            backgroundThread.join(5000); // Wait up to 5 seconds for the thread to finish
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
-        currentStatus = SystemStatus.STOPPED;
-        System.out.println("Background service stopped.");
     }
+    logger.info("Background service stopped.");
+}
 
-    @Override
-    public boolean isRunning() {
-        return running && currentStatus == SystemStatus.RUNNING;
-    }
-
-    public SystemStatus getCurrentStatus() {
-        return currentStatus;
-    }
-
-    public Exception getLastError() {
-        return lastError;
-    }
+@Override
+public boolean isRunning() {
+    return running.get();
+}
 }
