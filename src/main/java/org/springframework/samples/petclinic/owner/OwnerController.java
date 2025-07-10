@@ -157,9 +157,9 @@ import jakarta.validation.Valid;/**
 	public String initUpdateOwnerForm(@PathVariable("ownerId") int ownerId, Model model) {
 		Owner owner = this.owners.findById(ownerId);
 		var petCount = ownerRepository.countPets(owner.getId());
-		var totalVisits = owner.getPets().stream().mapToLong(pet-> pet.getVisits().size())
+		var totalVists = owner.getPets().stream().mapToLong(pet-> pet.getVisits().size())
 			.sum();
-		var averageVisits = petCount > 0 ? totalVisits/petCount : 0;
+		var averageCisits = petCount > 0 ? totalVists/petCount : 0;
 		model.addAttribute(owner);
 		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 	}
