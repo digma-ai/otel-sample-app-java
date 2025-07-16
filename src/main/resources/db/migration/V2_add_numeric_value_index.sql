@@ -1,0 +1,2 @@
+-- Add index on numeric_value column for query performance optimization
+CREATE INDEX IF NOT EXISTS crystaldba_idx_clinic_activity_logs_numeric_value_1 ON clinic_activity_logs USING btree (numeric_value);
