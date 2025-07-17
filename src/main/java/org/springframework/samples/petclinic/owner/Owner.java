@@ -20,9 +20,7 @@ import java.util.List;
 
 import org.springframework.core.style.ToStringCreator;
 import org.springframework.samples.petclinic.model.Person;
-import org.springframework.util.Assert;
-
-import jakarta.persistence.CascadeType;
+import org.springframework.util.Assert;import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -43,8 +41,7 @@ import jakarta.validation.constraints.NotBlank;
  * @author Oliver Drotbohm
  */
 @Entity
-@Table(name = "owners")
-public class Owner extends Person {
+@Table(name = "owners")public class Owner extends Person {
 
 	@Column(name = "address")
 	@NotBlank
@@ -59,7 +56,7 @@ public class Owner extends Person {
 	@Digits(fraction = 0, integer = 10)
 	private String telephone;
 
-	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@JoinColumn(name = "owner_id")
 	@OrderBy("name")
 	private List<Pet> pets = new ArrayList<>();
@@ -96,9 +93,7 @@ public class Owner extends Person {
 		if (pet.isNew()) {
 			getPets().add(pet);
 		}
-	}
-
-	/**
+	}/**
 	 * Return the Pet with the given name, or null if none found for this Owner.
 	 * @param name to test
 	 * @return a pet if pet name is already in use
@@ -122,9 +117,7 @@ public class Owner extends Person {
 			}
 		}
 		return null;
-	}
-
-	/**
+	}/**
 	 * Return the Pet with the given name, or null if none found for this Owner.
 	 * @param name to test
 	 * @return a pet if pet name is already in use
@@ -152,9 +145,7 @@ public class Owner extends Person {
 			.append("city", this.city)
 			.append("telephone", this.telephone)
 			.toString();
-	}
-
-	/**
+	}/**
 	 * Adds the given {@link Visit} to the {@link Pet} with the given identifier.
 	 * @param petId the identifier of the {@link Pet}, must not be {@literal null}.
 	 * @param visit the visit to add, must not be {@literal null}.
