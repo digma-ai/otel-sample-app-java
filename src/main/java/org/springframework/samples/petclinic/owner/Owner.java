@@ -20,7 +20,8 @@ import java.util.List;
 
 import org.springframework.core.style.ToStringCreator;
 import org.springframework.samples.petclinic.model.Person;
-import org.springframework.util.Assert;import jakarta.persistence.CascadeType;
+import org.springframework.util.Assert;
+import org.hibernate.annotations.BatchSize;import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -30,6 +31,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
+import org.hibernate.annotations.BatchSize;
 
 /**
  * Simple JavaBean domain object representing an owner.
@@ -41,7 +43,9 @@ import jakarta.validation.constraints.NotBlank;
  * @author Oliver Drotbohm
  */
 @Entity
-@Table(name = "owners")public class Owner extends Person {
+@Table(name = "owners")import org.hibernate.annotations.BatchSize;
+
+public class Owner extends Person {
 
 	@Column(name = "address")
 	@NotBlank
@@ -56,6 +60,7 @@ import jakarta.validation.constraints.NotBlank;
 	@Digits(fraction = 0, integer = 10)
 	private String telephone;
 
+	@BatchSize(size = 100)
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@JoinColumn(name = "owner_id")
 	@OrderBy("name")
@@ -93,7 +98,8 @@ import jakarta.validation.constraints.NotBlank;
 		if (pet.isNew()) {
 			getPets().add(pet);
 		}
-	}/**
+	}
+/**
 	 * Return the Pet with the given name, or null if none found for this Owner.
 	 * @param name to test
 	 * @return a pet if pet name is already in use
