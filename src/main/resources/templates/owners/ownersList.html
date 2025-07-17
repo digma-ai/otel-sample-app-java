@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 
-<html xmlns:th="https://www.thymeleaf.org" th:replace="~{fragments/layout :: layout (~{::body},'owners')}">
-
-<body>
+<html xmlns:th="https://www.thymeleaf.org" th:replace="~{fragments/layout :: layout (~{::body},'owners')}"><body>
 
 <h2>Owners</h2>
 
@@ -27,8 +25,7 @@
     <td><span th:text="${#strings.listJoin(owner.pets, ', ')}"/></td>
   </tr>
   </tbody>
-</table>
-<div th:if="${totalPages > 1}">
+</table><div th:if="${totalPages > 1}">
   <span>Pages:</span>
   <span>[</span>
   <span th:each="i: ${#numbers.sequence(1, totalPages)}">
@@ -48,8 +45,7 @@
     </span>
   <span>
       <a th:if="${currentPage < totalPages}" th:href="@{'/owners?page=__${currentPage + 1}__'}" title="Next"
-         class="fa fa-step-forward"></a>
-      <span th:unless="${currentPage < totalPages}" title="Next" class="fa fa-step-forward"></span>
+         class="fa fa-step-forward"></a><span th:unless="${currentPage < totalPages}" title="Next" class="fa fa-step-forward"></span>
     </span>
   <span>
       <a th:if="${currentPage < totalPages}" th:href="@{'/owners?page=__${totalPages}__'}" title="Last"
@@ -59,4 +55,3 @@
 </div>
 </body>
 </html>
-
