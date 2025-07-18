@@ -1,5 +1,7 @@
 package org.springframework.samples.petclinic.clinicactivity;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -33,4 +35,7 @@ public interface ClinicActivityLogRepository extends JpaRepository<ClinicActivit
 		   "AND cal.numericValue > 99999") // let's assume this condition means active
     int countActiveLogsByType(
         @Param("activityType") String activityType);
+        
+    @Query("SELECT cal FROM ClinicActivityLog cal WHERE cal.numericValue = :value")
+    Page<ClinicActivityLog> findByNumericValue(@Param("value") int value, Pageable pageable);
 }
