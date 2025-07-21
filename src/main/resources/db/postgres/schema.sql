@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS owners (
   first_name TEXT,
   last_name  TEXT,
   address    TEXT,
-  city       TEXT,
+  city      TEXT,
   telephone  TEXT
 );
 CREATE INDEX IF NOT EXISTS owners_last_name ON owners (last_name);
@@ -56,7 +56,10 @@ CREATE TABLE IF NOT EXISTS clinic_activity_logs (
   id                    SERIAL PRIMARY KEY,
   activity_type         VARCHAR(255),
   numeric_value         INTEGER,
-  event_timestamp       TIMESTAMP,
-  status_flag           BOOLEAN,
-  payload               TEXT
+  event_timestamp      TIMESTAMP,
+  status_flag          BOOLEAN,
+  payload              TEXT
 );
+
+-- Add index for numeric_value to improve query performance
+CREATE INDEX IF NOT EXISTS idx_clinic_activity_logs_numeric_value ON clinic_activity_logs USING btree (numeric_value);
