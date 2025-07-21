@@ -20,8 +20,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 @RestController
-@RequestMapping("/api/clinic-activity")
-public class ClinicActivityController implements InitializingBean {
+@RequestMapping("/api/clinic-activity")public class ClinicActivityController implements InitializingBean {
 
     private static final Logger logger = LoggerFactory.getLogger(ClinicActivityController.class);
 
@@ -46,9 +45,7 @@ public class ClinicActivityController implements InitializingBean {
     @Override
     public void afterPropertiesSet() throws Exception {
         this.otelTracer = openTelemetry.getTracer("ClinicActivityController");
-    }
-
-	// This ep is here to throw error
+    }// This ep is here to throw error
 	@GetMapping("active-errors-ratio")
 	public int getActiveErrorsRatio() {
 		return dataService.getActiveLogsRatio("errors");
@@ -67,21 +64,42 @@ public class ClinicActivityController implements InitializingBean {
             logger.error("Error during clinic activity log population", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during data population: " + e.getMessage());
         }
-    }
+    }@GetMapping(value = "/query-logs", produces = "application/json")
+    @Cacheable(value = "logsCache", key = "#page + '_' + #size + '_' + #repetitions")
+    public ResponseEntity<Map<String, Object>> getLogs(
+            @RequestParam(name = "repetitions", defaultValue = "1") int repetitions,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
+        try {
+            // Validate input parameters
+            if (repetitions < 1) {
+                throw new IllegalArgumentException("Repetitions must be greater than 0");
+            }
+            if (page < 0 || size <= 0) {
+                throw new IllegalArgumentException("Invalid pagination parameters");
+            }
 
-    @GetMapping(value = "/query-logs", produces = "application/json")
-    public List<Map<String, Object>> getLogs(
-            @RequestParam(name = "repetitions", defaultValue = "1") int repetitions) {
-        int numericValueToTest = 50000;
-        String sql = "SELECT id, activity_type, numeric_value, event_timestamp, status_flag, payload FROM clinic_activity_logs WHERE numeric_value = ?";
-        List<Map<String, Object>> lastResults = null;
-        for (int i = 0; i < repetitions; i++) {
-            lastResults = jdbcTemplate.queryForList(sql, numericValueToTest);
+            int numericValueToTest = 50000;
+            String sql = "SELECT id, activity_type, numeric_value, event_timestamp, status_flag, payload FROM clinic_activity_logs WHERE numeric_value = ? ORDER BY id LIMIT ? OFFSET ?";
+            List<Map<String, Object>> lastResults = null;
+
+            for (int i = 0; i < repetitions; i++) {
+                lastResults = jdbcTemplate.queryForList(sql, numericValueToTest, size, page * size);
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", lastResults);
+            response.put("page", page);
+            response.put("size", size);
+            response.put("total", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM clinic_activity_logs WHERE numeric_value = ?", Long.class, numericValueToTest));
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "An internal error occurred"));
         }
-        return lastResults;
-    }
-
-    @DeleteMapping("/cleanup-logs")
+    }@DeleteMapping("/cleanup-logs")
     public ResponseEntity<String> cleanupLogs() {
         logger.info("Received request to cleanup all clinic activity logs.");
         try {
@@ -99,9 +117,7 @@ public class ClinicActivityController implements InitializingBean {
 		@RequestParam(name = "repetitions", defaultValue = "100") int repetitions
 	) {
         long startTime = System.currentTimeMillis();
-        int totalOperations = 0;
-
-        for (int queryTypeIndex = 0; queryTypeIndex < uniqueQueriesCount; queryTypeIndex++) {
+        int totalOperations = 0;for (int queryTypeIndex = 0; queryTypeIndex < uniqueQueriesCount; queryTypeIndex++) {
             char queryTypeChar = (char) ('A' + queryTypeIndex);
             String parentSpanName = "Batch_Type" + queryTypeChar;
             Span typeParentSpan = otelTracer.spanBuilder(parentSpanName).startSpan();
@@ -115,9 +131,7 @@ public class ClinicActivityController implements InitializingBean {
             } finally {
                 typeParentSpan.end();
             }
-        }
-
-        long endTime = System.currentTimeMillis();
+        }long endTime = System.currentTimeMillis();
         String message = String.format("Executed %d simulated clinic query operations in %d ms.", totalOperations, (endTime - startTime));
         logger.info(message);
         return ResponseEntity.ok(message);
@@ -132,9 +146,7 @@ public class ClinicActivityController implements InitializingBean {
 		try {
 			// Drop the table
 			jdbcTemplate.execute("DROP TABLE IF EXISTS clinic_activity_logs");
-			logger.info("Table 'clinic_activity_logs' dropped successfully.");
-
-			// Recreate the table
+			logger.info("Table 'clinic_activity_logs' dropped successfully.");// Recreate the table
 			String createTableSql = "CREATE TABLE clinic_activity_logs (" +
 				"id SERIAL PRIMARY KEY," +
 				"activity_type VARCHAR(255)," +
@@ -153,9 +165,7 @@ public class ClinicActivityController implements InitializingBean {
 			logger.error("Error during clinic activity log recreation and population", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during data recreation and population: " + e.getMessage());
 		}
-	}
-
-	@PostMapping("/io-intensive-load")
+	}@PostMapping("/io-intensive-load")
 	public ResponseEntity<String> createIOIntensiveLoad(@RequestParam(name = "duration", defaultValue = "5") int durationMinutes,
 														@RequestParam(name = "threads", defaultValue = "6") int numThreads,
 														@RequestParam(name = "limit", defaultValue = "400000") int limit) {
@@ -170,8 +180,7 @@ public class ClinicActivityController implements InitializingBean {
 		if (numThreads <= 0) {
 			return ResponseEntity.badRequest().body("Number of threads must be a positive integer.");
 		}
-		if (numThreads > 20) {
-			return ResponseEntity.badRequest().body("Too many threads for I/O intensive load - maximum 20 to prevent system crash.");
+		if (numThreads > 20) {return ResponseEntity.badRequest().body("Too many threads for I/O intensive load - maximum 20 to prevent system crash.");
 		}
 		if (limit <= 0) {
 			return ResponseEntity.badRequest().body("Limit must be a positive integer.");
@@ -186,9 +195,7 @@ public class ClinicActivityController implements InitializingBean {
 			logger.error("Error during I/O intensive load", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during I/O intensive load: " + e.getMessage());
 		}
-	}
-
-    private void performObservableOperation(String operationName) {
+	}private void performObservableOperation(String operationName) {
         Span span = otelTracer.spanBuilder(operationName)
             .setSpanKind(SpanKind.CLIENT)
             .setAttribute("db.system", "postgresql")
