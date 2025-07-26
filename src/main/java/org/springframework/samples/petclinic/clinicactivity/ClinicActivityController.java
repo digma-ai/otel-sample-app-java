@@ -9,6 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -20,8 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 @RestController
-@RequestMapping("/api/clinic-activity")
-public class ClinicActivityController implements InitializingBean {
+@RequestMapping("/api/clinic-activity")public class ClinicActivityController implements InitializingBean {
 
     private static final Logger logger = LoggerFactory.getLogger(ClinicActivityController.class);
 
@@ -46,9 +48,7 @@ public class ClinicActivityController implements InitializingBean {
     @Override
     public void afterPropertiesSet() throws Exception {
         this.otelTracer = openTelemetry.getTracer("ClinicActivityController");
-    }
-
-	// This ep is here to throw error
+    }// This ep is here to throw error
 	@GetMapping("active-errors-ratio")
 	public int getActiveErrorsRatio() {
 		return dataService.getActiveLogsRatio("errors");
@@ -67,21 +67,46 @@ public class ClinicActivityController implements InitializingBean {
             logger.error("Error during clinic activity log population", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during data population: " + e.getMessage());
         }
-    }
-
-    @GetMapping(value = "/query-logs", produces = "application/json")
-    public List<Map<String, Object>> getLogs(
-            @RequestParam(name = "repetitions", defaultValue = "1") int repetitions) {
+    }@GetMapping(value = "/query-logs", produces = "application/json")
+@ApiOperation(value = "Retrieve paginated activity logs", notes = "Returns paginated clinic activity logs filtered by numeric value")
+@ApiResponses(value = {
+    @ApiResponse(code = 200, message = "Successfully retrieved logs"),
+    @ApiResponse(code = 400, message = "Invalid request parameters"),
+    @ApiResponse(code = 500, message = "Internal server error")
+})
+public ResponseEntity<Page<Map<String, Object>>> getLogs(
+        @ApiParam(value = "Page number (0-based)", defaultValue = "0")
+        @RequestParam(defaultValue = "0") int page,
+        @ApiParam(value = "Number of records per page", defaultValue = "20")
+        @RequestParam(defaultValue = "20") int size) {
+    try {
         int numericValueToTest = 50000;
-        String sql = "SELECT id, activity_type, numeric_value, event_timestamp, status_flag, payload FROM clinic_activity_logs WHERE numeric_value = ?";
-        List<Map<String, Object>> lastResults = null;
-        for (int i = 0; i < repetitions; i++) {
-            lastResults = jdbcTemplate.queryForList(sql, numericValueToTest);
-        }
-        return lastResults;
-    }
+        String sql = "SELECT /*+ INDEX(cal numeric_value_idx) */ id, activity_type, numeric_value, event_timestamp, status_flag, payload "
+                + "FROM clinic_activity_logs cal "
+                + "WHERE numeric_value = ? "
+                + "LIMIT ? OFFSET ?";
 
-    @DeleteMapping("/cleanup-logs")
+        int offset = page * size;
+        
+        // Get total count for pagination
+        String countSql = "SELECT COUNT(*) FROM clinic_activity_logs WHERE numeric_value = ?";
+        int totalElements = jdbcTemplate.queryForObject(countSql, Integer.class, numericValueToTest);
+        
+        List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, numericValueToTest, size, offset);
+        
+        Page<Map<String, Object>> pageResult = new PageImpl<>(
+            results,
+            PageRequest.of(page, size),
+            totalElements
+        );
+        
+        return ResponseEntity.ok(pageResult);
+    } catch (IllegalArgumentException e) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination parameters", e);
+    } catch (Exception e) {
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error retrieving logs", e);
+    }
+}@DeleteMapping("/cleanup-logs")
     public ResponseEntity<String> cleanupLogs() {
         logger.info("Received request to cleanup all clinic activity logs.");
         try {
@@ -99,9 +124,7 @@ public class ClinicActivityController implements InitializingBean {
 		@RequestParam(name = "repetitions", defaultValue = "100") int repetitions
 	) {
         long startTime = System.currentTimeMillis();
-        int totalOperations = 0;
-
-        for (int queryTypeIndex = 0; queryTypeIndex < uniqueQueriesCount; queryTypeIndex++) {
+        int totalOperations = 0;for (int queryTypeIndex = 0; queryTypeIndex < uniqueQueriesCount; queryTypeIndex++) {
             char queryTypeChar = (char) ('A' + queryTypeIndex);
             String parentSpanName = "Batch_Type" + queryTypeChar;
             Span typeParentSpan = otelTracer.spanBuilder(parentSpanName).startSpan();
@@ -115,9 +138,7 @@ public class ClinicActivityController implements InitializingBean {
             } finally {
                 typeParentSpan.end();
             }
-        }
-
-        long endTime = System.currentTimeMillis();
+        }long endTime = System.currentTimeMillis();
         String message = String.format("Executed %d simulated clinic query operations in %d ms.", totalOperations, (endTime - startTime));
         logger.info(message);
         return ResponseEntity.ok(message);
@@ -132,9 +153,7 @@ public class ClinicActivityController implements InitializingBean {
 		try {
 			// Drop the table
 			jdbcTemplate.execute("DROP TABLE IF EXISTS clinic_activity_logs");
-			logger.info("Table 'clinic_activity_logs' dropped successfully.");
-
-			// Recreate the table
+			logger.info("Table 'clinic_activity_logs' dropped successfully.");// Recreate the table
 			String createTableSql = "CREATE TABLE clinic_activity_logs (" +
 				"id SERIAL PRIMARY KEY," +
 				"activity_type VARCHAR(255)," +
@@ -153,9 +172,7 @@ public class ClinicActivityController implements InitializingBean {
 			logger.error("Error during clinic activity log recreation and population", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during data recreation and population: " + e.getMessage());
 		}
-	}
-
-	@PostMapping("/io-intensive-load")
+	}@PostMapping("/io-intensive-load")
 	public ResponseEntity<String> createIOIntensiveLoad(@RequestParam(name = "duration", defaultValue = "5") int durationMinutes,
 														@RequestParam(name = "threads", defaultValue = "6") int numThreads,
 														@RequestParam(name = "limit", defaultValue = "400000") int limit) {
@@ -170,8 +187,7 @@ public class ClinicActivityController implements InitializingBean {
 		if (numThreads <= 0) {
 			return ResponseEntity.badRequest().body("Number of threads must be a positive integer.");
 		}
-		if (numThreads > 20) {
-			return ResponseEntity.badRequest().body("Too many threads for I/O intensive load - maximum 20 to prevent system crash.");
+		if (numThreads > 20) {return ResponseEntity.badRequest().body("Too many threads for I/O intensive load - maximum 20 to prevent system crash.");
 		}
 		if (limit <= 0) {
 			return ResponseEntity.badRequest().body("Limit must be a positive integer.");
@@ -186,9 +202,7 @@ public class ClinicActivityController implements InitializingBean {
 			logger.error("Error during I/O intensive load", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error during I/O intensive load: " + e.getMessage());
 		}
-	}
-
-    private void performObservableOperation(String operationName) {
+	}private void performObservableOperation(String operationName) {
         Span span = otelTracer.spanBuilder(operationName)
             .setSpanKind(SpanKind.CLIENT)
             .setAttribute("db.system", "postgresql")
