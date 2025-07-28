@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.samples.petclinic.owner;
-
-import java.util.HashMap;
+package org.springframework.samples.petclinic.owner;import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;import io.opentelemetry.api.OpenTelemetry;
@@ -34,10 +32,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.ModelAndView;
-
-import jakarta.validation.Valid;/**
+import org.springframework.web.bind.annotation.*;import org.springframework.web.servlet.ModelAndView;import jakarta.validation.Valid;/**
  * @author Juergen Hoeller
  * @author Ken Krebs
  * @author Arjen Poutsma
@@ -71,9 +66,7 @@ import jakarta.validation.Valid;/**
 	) {
 		this.owners = clinicService;
 		this.jdbcTemplate = jdbcTemplate;
-	}
-
-	@InitBinder
+	}@InitBinder
 	public void setAllowedFields(WebDataBinder dataBinder) {
 		dataBinder.setDisallowedFields("id");
 	}@ModelAttribute("owner")
@@ -98,9 +91,7 @@ import jakarta.validation.Valid;/**
 			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 		}
 		validator.ValidateOwnerWithExternalService(owner);
-		validator.PerformValidationFlow(owner);
-
-		validator.checkOwnerValidity(owner);
+		validator.PerformValidationFlow(owner);validator.checkOwnerValidity(owner);
 		this.owners.save(owner);
 		validator.ValidateUserAccess("admin", "pwd", "fullaccess");
 		return "redirect:/owners/" + owner.getId();
@@ -126,9 +117,7 @@ import jakarta.validation.Valid;/**
 			// no owners found
 			result.rejectValue("lastName", "notFound", "not found");
 			return "owners/findOwners";
-		}
-
-		if (ownersResults.getTotalElements() == 1) {
+		}if (ownersResults.getTotalElements() == 1) {
 			// 1 owner found
 			owner = ownersResults.iterator().next();
 			return "redirect:/owners/" + owner.getId();
@@ -146,16 +135,16 @@ import jakarta.validation.Valid;/**
 		model.addAttribute("totalItems", paginated.getTotalElements());
 		model.addAttribute("listOwners", listOwners);
 		return "owners/ownersList";
-	}
-
-	@WithSpan()
+	}@WithSpan()
 	private Page<Owner> findPaginatedForOwnersLastName(int page, String lastname) {
 		int pageSize = 5;
 		Pageable pageable = PageRequest.of(page - 1, pageSize);
-		return owners.findByLastName(lastname, pageable);
-	}@GetMapping("/owners/{ownerId}/edit")
+		return owners.findByLastNameWithPets(lastname, pageable);
+	}
+
+	@GetMapping("/owners/{ownerId}/edit")
 	public String initUpdateOwnerForm(@PathVariable("ownerId") int ownerId, Model model) {
-		Owner owner = this.owners.findById(ownerId);
+		Owner owner = this.owners.findByIdWithPets(ownerId);
 		model.addAttribute(owner);
 		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 	}
@@ -178,8 +167,7 @@ import jakarta.validation.Valid;/**
 
 		owner.setId(ownerId);
 		validator.checkOwnerValidity(owner);
-
-		validator.ValidateOwnerWithExternalService(owner);
+validator.ValidateOwnerWithExternalService(owner);
 	}validator.PerformValidationFlow(owner);
 		this.owners.save(owner);
 		return "redirect:/owners/{ownerId}";
@@ -195,7 +183,7 @@ import jakarta.validation.Valid;/**
 		validator.ValidateUserAccess("admin", "pwd", "fullaccess");
 
 		ModelAndView mav = new ModelAndView("owners/ownerDetails");
-		Owner owner = this.owners.findById(ownerId);
+		Owner owner = this.owners.findByIdWithPets(ownerId);
 		validator.ValidateOwnerWithExternalService(owner);
 
 		mav.addObject(owner);
@@ -204,25 +192,21 @@ import jakarta.validation.Valid;/**
 
 	@GetMapping("/owners/{ownerId}/pets")
 	@ResponseBody
-	public String getOwnerPetsMap(@PathVariable("ownerId") int ownerId) {
-		String sql = "SELECT p.id AS pet_id, p.owner_id AS owner_id FROM pets p JOIN owners o ON p.owner_id = o.id";
+	public List<Pet> getOwnerPetsMap(@PathVariable("ownerId") int ownerId) {
+		return this.owners.findPetsByOwnerId(ownerId);
+	}@Autowired
+private OwnerRepository ownerRepository;
 
-		List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);Map<Integer, List<Integer>> ownerToPetsMap = rows.stream()
-			.collect(Collectors.toMap(
-				row -> (Integer) row.get("owner_id"),
-				row -> List.of((Integer) row.get("pet_id"))  // Immutable list
-			));
+public String getPetsForOwner(Integer ownerId) {
+    Owner owner = ownerRepository.findOwnerWithPets(ownerId)
+        .orElseThrow(() -> new ResourceNotFoundException("Owner not found"));
 
+    if (owner.getPets().isEmpty()) {
+        return "No pets found for owner " + ownerId;
+    }
 
-		List<Integer> pets = ownerToPetsMap.get(ownerId);
-
-		if (pets == null || pets.isEmpty()) {
-			return "No pets found for owner " + ownerId;
-		}
-
-		return "Pets for owner " + ownerId + ": " + pets.stream()
-			.map(String::valueOf)
-			.collect(Collectors.joining(", "));
-
-	}
+    return "Pets for owner " + ownerId + ": " + 
+        owner.getPets().stream()
+            .map(pet -> String.valueOf(pet.getId()))
+            .collect(Collectors.joining(", "));
 }
