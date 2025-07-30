@@ -55,7 +55,6 @@ public class MonitorService implements SmartLifecycle {
 	}
 
 
-
 	@Override
 	public void stop() {
 		// Stop the background task
@@ -72,6 +71,7 @@ public class MonitorService implements SmartLifecycle {
 
 	@Override
 	public boolean isRunning() {
+		// Always return false since we manage running state internally
 		return false;
 	}
 }
