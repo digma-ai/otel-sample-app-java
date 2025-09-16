@@ -215,7 +215,8 @@ class OwnerController implements InitializingBean {
 		ModelAndView mav = new ModelAndView("owners/ownerDetails");
 		Owner owner = this.owners.findById(ownerId);
 		validator.ValidateOwnerWithExternalService(owner);
-
+		int petFactor = 1 / owner.getPets().size();
+		System.out.println(petFactor);
 		mav.addObject(owner);
 		return mav;
 	}
