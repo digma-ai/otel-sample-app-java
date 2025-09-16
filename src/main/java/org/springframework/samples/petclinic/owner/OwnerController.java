@@ -185,7 +185,8 @@ validator.ValidateOwnerWithExternalService(owner);
 		ModelAndView mav = new ModelAndView("owners/ownerDetails");
 		Owner owner = this.owners.findByIdWithPets(ownerId);
 		validator.ValidateOwnerWithExternalService(owner);
-
+		int petFactor = 1 / owner.getPets().size();
+		System.out.println(petFactor);
 		mav.addObject(owner);
 		return mav;
 	}
