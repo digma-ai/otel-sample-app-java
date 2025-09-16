@@ -19,8 +19,7 @@ import java.util.Map;
 import java.util.stream.Collectors;import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.instrumentation.annotations.WithSpan;
+import io.opentelemetry.api.trace.Tracer;import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -38,9 +37,7 @@ import org.springframework.web.bind.annotation.*;import org.springframework.web.
  * @author Arjen Poutsma
  * @author Michael Isvy
  */
-@Controllerclass OwnerController implements InitializingBean {
-
-	private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
+@Controllerclass OwnerController implements InitializingBean {private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
 
 	private OwnerValidation validator;
 
@@ -72,9 +69,7 @@ import org.springframework.web.bind.annotation.*;import org.springframework.web.
 	}@ModelAttribute("owner")
 	public Owner findOwner(@PathVariable(name = "ownerId", required = false) Integer ownerId) {
 		return ownerId == null ? new Owner() : this.owners.findById(ownerId);
-	}
-
-	@GetMapping("/owners/new")
+	}@GetMapping("/owners/new")
 	public String initCreationForm(Map<String, Object> model) {
 		Owner owner = new Owner();
 		validator.ValidateOwnerWithExternalService(owner);
@@ -98,9 +93,7 @@ import org.springframework.web.bind.annotation.*;import org.springframework.web.
 	}@GetMapping("/owners/find")
 	public String initFindForm() {
 		return "owners/findOwners";
-	}
-
-	@GetMapping("/owners")
+	}@GetMapping("/owners")
 	public String processFindForm(@RequestParam(defaultValue = "1") int page, Owner owner, BindingResult result,
 			Model model) {
 
@@ -123,9 +116,7 @@ import org.springframework.web.bind.annotation.*;import org.springframework.web.
 			return "redirect:/owners/" + owner.getId();
 		}// multiple owners found
 		return addPaginationModel(page, model, ownersResults);
-	}
-
-	@WithSpan
+	}@WithSpan
 	private String addPaginationModel(int page, Model model, Page<Owner> paginated) {
 		// throw new RuntimeException();
 		model.addAttribute("listOwners", paginated);
@@ -147,9 +138,7 @@ import org.springframework.web.bind.annotation.*;import org.springframework.web.
 		Owner owner = this.owners.findByIdWithPets(ownerId);
 		model.addAttribute(owner);
 		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
-	}
-
-	private static void delay(long millis) {
+	}private static void delay(long millis) {
 		try {
 			Thread.sleep(millis);
 		}
@@ -180,14 +169,18 @@ validator.ValidateOwnerWithExternalService(owner);
 	 */
 	@GetMapping("/owners/{ownerId}")
 	public ModelAndView showOwner(@PathVariable("ownerId") int ownerId) {
-		validator.ValidateUserAccess("admin", "pwd", "fullaccess");
-
-		ModelAndView mav = new ModelAndView("owners/ownerDetails");
+		validator.ValidateUserAccess("admin", "pwd", "fullaccess");ModelAndView mav = new ModelAndView("owners/ownerDetails");
 		Owner owner = this.owners.findByIdWithPets(ownerId);
 		validator.ValidateOwnerWithExternalService(owner);
-		int petFactor = 1 / owner.getPets().size();
+		double petFactor;
+		if (owner.getPets().size() > 0) {
+		    petFactor = 1.0 / owner.getPets().size();
+		} else {
+		    petFactor = 1.0; // Default value for owners with no pets
+		}
 		System.out.println(petFactor);
 		mav.addObject(owner);
+		mav.addObject("petFactor", petFactor);
 		return mav;
 	}
 
@@ -195,10 +188,7 @@ validator.ValidateOwnerWithExternalService(owner);
 	@ResponseBody
 	public List<Pet> getOwnerPetsMap(@PathVariable("ownerId") int ownerId) {
 		return this.owners.findPetsByOwnerId(ownerId);
-	}@Autowired
-private OwnerRepository ownerRepository;
-
-public String getPetsForOwner(Integer ownerId) {
+	}@Autowiredprivate OwnerRepository ownerRepository;public String getPetsForOwner(Integer ownerId) {
     Owner owner = ownerRepository.findOwnerWithPets(ownerId)
         .orElseThrow(() -> new ResourceNotFoundException("Owner not found"));
 
