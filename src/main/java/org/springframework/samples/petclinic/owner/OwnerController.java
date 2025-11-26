@@ -18,9 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.instrumentation.annotations.WithSpan;
+import io.opentelemetry.api.trace.SpanKind;import io.opentelemetry.api.trace.Tracer;import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -37,12 +35,7 @@ import org.springframework.web.bind.annotation.*;import org.springframework.web.
  * @author Ken Krebs
  * @author Arjen Poutsma
  * @author Michael Isvy
- */
-@Controllerclass OwnerController implements InitializingBean {
-
-	private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
-
-	private OwnerValidation validator;
+ */@Controllerclass OwnerController implements InitializingBean {private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";private OwnerValidation validator;
 
 	@Autowired
 	private OpenTelemetry openTelemetry;
@@ -61,9 +54,7 @@ import org.springframework.web.bind.annotation.*;import org.springframework.web.
 	private final OwnerRepository owners;
 	private final JdbcTemplate jdbcTemplate;
 
-	public OwnerController(OwnerRepository clinicService, JdbcTemplate jdbcTemplate
-
-	) {
+	public OwnerController(OwnerRepository clinicService, JdbcTemplate jdbcTemplate) {
 		this.owners = clinicService;
 		this.jdbcTemplate = jdbcTemplate;
 	}@InitBinder
@@ -72,9 +63,7 @@ import org.springframework.web.bind.annotation.*;import org.springframework.web.
 	}@ModelAttribute("owner")
 	public Owner findOwner(@PathVariable(name = "ownerId", required = false) Integer ownerId) {
 		return ownerId == null ? new Owner() : this.owners.findById(ownerId);
-	}
-
-	@GetMapping("/owners/new")
+	}@GetMapping("/owners/new")
 	public String initCreationForm(Map<String, Object> model) {
 		Owner owner = new Owner();
 		validator.ValidateOwnerWithExternalService(owner);
@@ -83,9 +72,7 @@ import org.springframework.web.bind.annotation.*;import org.springframework.web.
 		validator.ValidateUserAccess("admin", "pwd", "fullaccess");
 
 		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
-	}
-
-	@PostMapping("/owners/new")
+	}@PostMapping("/owners/new")
 	public String processCreationForm(@Valid Owner owner, BindingResult result) {
 		if (result.hasErrors()) {
 			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
@@ -98,9 +85,7 @@ import org.springframework.web.bind.annotation.*;import org.springframework.web.
 	}@GetMapping("/owners/find")
 	public String initFindForm() {
 		return "owners/findOwners";
-	}
-
-	@GetMapping("/owners")
+	}@GetMapping("/owners")
 	public String processFindForm(@RequestParam(defaultValue = "1") int page, Owner owner, BindingResult result,
 			Model model) {
 
@@ -109,9 +94,7 @@ import org.springframework.web.bind.annotation.*;import org.springframework.web.
 		// allow parameterless GET request for /owners to return all records
 		if (owner.getLastName() == null) {
 			owner.setLastName(""); // empty string signifies broadest possible search
-		}
-
-		// find owners by last name
+		}// find owners by last name
 		Page<Owner> ownersResults = findPaginatedForOwnersLastName(page, owner.getLastName());
 		if (ownersResults.isEmpty()) {
 			// no owners found
@@ -123,9 +106,7 @@ import org.springframework.web.bind.annotation.*;import org.springframework.web.
 			return "redirect:/owners/" + owner.getId();
 		}// multiple owners found
 		return addPaginationModel(page, model, ownersResults);
-	}
-
-	@WithSpan
+	}@WithSpan
 	private String addPaginationModel(int page, Model model, Page<Owner> paginated) {
 		// throw new RuntimeException();
 		model.addAttribute("listOwners", paginated);
@@ -134,22 +115,17 @@ import org.springframework.web.bind.annotation.*;import org.springframework.web.
 		model.addAttribute("totalPages", paginated.getTotalPages());
 		model.addAttribute("totalItems", paginated.getTotalElements());
 		model.addAttribute("listOwners", listOwners);
-		return "owners/ownersList";
-	}@WithSpan()
+		return "owners/ownersList";}@WithSpan()
 	private Page<Owner> findPaginatedForOwnersLastName(int page, String lastname) {
 		int pageSize = 5;
 		Pageable pageable = PageRequest.of(page - 1, pageSize);
 		return owners.findByLastNameWithPets(lastname, pageable);
-	}
-
-	@GetMapping("/owners/{ownerId}/edit")
+	}@GetMapping("/owners/{ownerId}/edit")
 	public String initUpdateOwnerForm(@PathVariable("ownerId") int ownerId, Model model) {
 		Owner owner = this.owners.findByIdWithPets(ownerId);
 		model.addAttribute(owner);
 		return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
-	}
-
-	private static void delay(long millis) {
+	}private static void delay(long millis) {
 		try {
 			Thread.sleep(millis);
 		}
@@ -171,34 +147,30 @@ validator.ValidateOwnerWithExternalService(owner);
 	}validator.PerformValidationFlow(owner);
 		this.owners.save(owner);
 		return "redirect:/owners/{ownerId}";
-	}
-
-	/**
+	}/**
 	 * Custom handler for displaying an owner.
 	 * @param ownerId the ID of the owner to display
 	 * @return a ModelMap with the model attributes for the view
 	 */
 	@GetMapping("/owners/{ownerId}")
 	public ModelAndView showOwner(@PathVariable("ownerId") int ownerId) {
-		validator.ValidateUserAccess("admin", "pwd", "fullaccess");
-
-		ModelAndView mav = new ModelAndView("owners/ownerDetails");
+		validator.ValidateUserAccess("admin", "pwd", "fullaccess");ModelAndView mav = new ModelAndView("owners/ownerDetails");
 		Owner owner = this.owners.findByIdWithPets(ownerId);
 		validator.ValidateOwnerWithExternalService(owner);
-		int petFactor = 1 / owner.getPets().size();
+		int petFactor;
+		if (owner.getPets() != null && owner.getPets().size() > 0) {
+			petFactor = 1 / owner.getPets().size();
+		} else {
+			petFactor = 1;
+		}
 		System.out.println(petFactor);
 		mav.addObject(owner);
 		return mav;
-	}
-
-	@GetMapping("/owners/{ownerId}/pets")
+	}@GetMapping("/owners/{ownerId}/pets")
 	@ResponseBody
 	public List<Pet> getOwnerPetsMap(@PathVariable("ownerId") int ownerId) {
 		return this.owners.findPetsByOwnerId(ownerId);
-	}@Autowired
-private OwnerRepository ownerRepository;
-
-public String getPetsForOwner(Integer ownerId) {
+	}@Autowiredprivate OwnerRepository ownerRepository;public String getPetsForOwner(Integer ownerId) {
     Owner owner = ownerRepository.findOwnerWithPets(ownerId)
         .orElseThrow(() -> new ResourceNotFoundException("Owner not found"));
 
